@@ -1,0 +1,28 @@
+name: Publish Package
+
+on:
+  push:
+    tags: [ 'v*' ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - name: Generate Tags
+      id: tag
+      run: |
+        echo "::set-output name=shortsha::$(echo ${GITHUB_SHA::7})"
+        GD=$(git describe --tags)
+        GDS=${GD%%-*}
+        if [ "${GD}" = "${GDS}" ]; then
+          TAGS="${GD} latest ${GD%.*}"  # include vx.y.z, vx.y and latest
+        else
+          echo "git describe returned '${GD}' instead of a simple vx.y.z" >&2
+          exit 1
+        fi
+        echo "TAGS: ${TAGS}"
+        echo "::set-output name=imagetags::${TAGS}"

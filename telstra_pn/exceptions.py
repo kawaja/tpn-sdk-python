@@ -1,0 +1,2 @@
+class TPNAPIUnavailable(RuntimeError):
+    pass
