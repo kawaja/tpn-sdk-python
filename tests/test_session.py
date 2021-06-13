@@ -49,7 +49,9 @@ class TestSession(unittest.TestCase):
         tpns = telstra_pn.Session(
             accountid=accountid, username=username, password=password)
         tpns.validate()
+        print(tpns.data)
         self.assertTrue(tpns.useruuid, f'{accountid}/{username}')
-        self.assertTrue(tpns.customeruuid, tests.mocks_auth.MockCustomerUUID)
+        self.assertTrue(tpns.customeruuid,
+                        tests.mocks_auth.MockCustomerUUID)
         self.assertTrue(tpns.useruuid, tests.mocks_auth.MockUserUUID)
         self.assertEqual(api_mock.call_count, 2)

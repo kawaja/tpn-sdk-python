@@ -1,6 +1,6 @@
 import unittest
 import requests_mock
-from requests.exceptions import HTTPError
+from requests.exceptions import HTTPError, ConnectTimeout
 
 import telstra_pn
 import telstra_pn.rest
@@ -69,6 +69,36 @@ class TestRest(unittest.TestCase):
         with self.assertRaisesRegex(HTTPError, 'Server Error:.*'):
             tpns.call_api(
                 method='POST',
+                path='nopath',
+                body=''
+            )
+
+    @requests_mock.Mocker()
+    def test_post_timeout(self, post_mock):
+        post_mock.post(
+            '/',
+            exc=ConnectTimeout
+        )
+
+        tpns = telstra_pn.rest.ApiSession()
+        with self.assertRaises(telstra_pn.exceptions.TPNAPIUnavailable):
+            tpns.call_api(
+                method='POST',
+                path='nopath',
+                body=''
+            )
+
+    @requests_mock.Mocker()
+    def test_get_timeout(self, get_mock):
+        get_mock.get(
+            '/',
+            exc=ConnectTimeout
+        )
+
+        tpns = telstra_pn.rest.ApiSession()
+        with self.assertRaises(telstra_pn.exceptions.TPNAPIUnavailable):
+            tpns.call_api(
+                method='GET',
                 path='nopath',
                 body=''
             )
