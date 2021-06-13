@@ -5,13 +5,13 @@ from requests.exceptions import HTTPError, ConnectTimeout
 import telstra_pn
 import telstra_pn.rest
 import telstra_pn.exceptions
-import tests.mocks_auth
+import tests.mocks
 
 
 class TestRest(unittest.TestCase):
     def setUp(self):
         telstra_pn.__flags__['debug'] = True
-        self.mr = tests.mocks_auth.mock_responses
+        self.mr = tests.mocks.mock_responses
 
     @requests_mock.Mocker()
     def test_get_success(self, get_mock):

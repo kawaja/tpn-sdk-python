@@ -1,13 +1,13 @@
 import telstra_pn.rest
 import telstra_pn.exceptions
-from typing import Any
+from telstra_pn.models.tpn_model import TPNModel
 
 
-class Session:
+class Session(TPNModel):
     def __init__(self,
                  accountid: str = None,
                  username: str = None,
-                 password: str = None):
+                 password: str = None) -> None:
         self.api_session = telstra_pn.rest.ApiSession()
         self.data = {}
 
@@ -35,7 +35,7 @@ class Session:
         self.api_session.set_auth(f'Bearer {self.sessionkey}')
         self.data = {**self.data, **response}
 
-    def validate(self):
+    def validate(self) -> None:
         response = self.api_session.call_api(
             path='/1.0.0/auth/validatetoken'
         )
@@ -46,7 +46,5 @@ class Session:
         del response['customerid']
         self.data = {**self.data, **response}
 
-    def __getattr__(self, name: str) -> Any:
-        d = self.data
-        if name in d:
-            return d[name]
+    def Datacentres(self) -> telstra_pn.Datacentres:
+        return telstra_pn.Datacentres(self)

@@ -1,20 +1,18 @@
-import re
+MockAuthSessionKey = '76f7e712abd55921d4bcad43a92c20'
+MockAuthCustomerUUID = 'd632c88d-2555-440d-9ade-a850e91cd3a8'
+MockAuthUserUUID = '290fff0a-61dc-42ca-ba54-0efa4b519eeb'
+MockAuthUsername = 'abcdef'
+MockAuthPassword = 'fdjsak'
+MockAuthAccountid = '14322314'
 
-MockSessionKey = '76f7e712abd55921d4bcad43a92c20'
-MockCustomerUUID = 'd632c88d-2555-440d-9ade-a850e91cd3a8'
-MockUserUUID = '290fff0a-61dc-42ca-ba54-0efa4b519eeb'
-MockUsername = 'abcdef'
-MockPassword = 'fdjsak'
-MockAccountid = '14322314'
-
-mock_responses = {
+mock_auth_responses = {
     '/is/1.0.0/generatetoken': {
         'POST': {
             'response': {
                 'token_type': 'bearer',
                 'expires_in': 6899,
                 'refresh_token': '903c481cb5dffcfc52e292867075037',
-                'access_token': MockSessionKey
+                'access_token': MockAuthSessionKey
             },
             'status_code': 200
         }
@@ -22,9 +20,9 @@ mock_responses = {
     '/1.0.0/auth/validatetoken': {
         'GET': {
             'response': {
-                'customerid': MockCustomerUUID,
-                'userid': MockUserUUID,
-                'username': f'{MockAccountid}/{MockUsername}'
+                'customerid': MockAuthCustomerUUID,
+                'userid': MockAuthUserUUID,
+                'username': f'{MockAuthAccountid}/{MockAuthUsername}'
             },
             'status_code': 200
         }
@@ -42,24 +40,3 @@ mock_responses = {
         }
     }
 }
-
-
-def setup_mocks(mock, paths):
-    for rpath in mock_responses:
-        for mpath in paths:
-            print(f'rpath={rpath}, mpath={mpath}')
-            if re.search(mpath, rpath):
-                for (method, status_code) in [('GET', 200),
-                                              ('POST', 201),
-                                              ('PUT', 200),
-                                              ('DELETE', 200)]:
-                    if method in mock_responses[rpath]:
-                        print(f'adding mock for {method} {rpath}')
-                        mock.request(
-                            method,
-                            rpath,
-                            status_code=mock_responses[rpath][method].get(
-                                'status_code', status_code),
-                            json=mock_responses[rpath][method].get(
-                                'response', {})
-                        )
