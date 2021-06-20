@@ -1,6 +1,5 @@
 from requests_mock.contrib import fixture
 import testtools
-import json
 
 import telstra_pn
 import telstra_pn.exceptions

@@ -85,7 +85,8 @@ class TestRest(testtools.TestCase):
             body=''
         )
 
-        self.assertEqual(r, self.mr['/testpath'][('default', 'DELETE')]['json'])
+        self.assertEqual(r,
+                         self.mr['/testpath'][('default', 'DELETE')]['json'])
 
     def test_lowercase_method(self):
         tests.mocks.setup_mocks(
