@@ -3,8 +3,8 @@ MockDatacentresDC2UUID = 'd1125a6c-b7b9-4156-9c6b-a42aa9cced04'
 
 mock_datacentres_responses = {
     "/1.0.0/inventory/datacenters": {
-        "GET": {
-            "response": {
+        ('default', 'GET'): {
+            "json": {
                 "datacenters": [
                     {
                         "cityname": "Melbourne",
