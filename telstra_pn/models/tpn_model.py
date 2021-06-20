@@ -10,6 +10,8 @@ class TPNModel:
         self.debug = __flags__.get('debug')
         self.data = {}
         self._is_refreshing = False
+        if self.debug:
+            print(f'creating {self.__class__.__name__}')
 
     def __getattr__(self, name: str) -> Any:
         if __flags__.get('debug_getattr'):
@@ -73,17 +75,39 @@ class TPNListModel(TPNModel):
         super().__init__(session)
         self.all = []
 
+    # avoid hitting the TPNModel __getattr__
     def __contains__(self, term):
-        for item in self.all:
-            for key in self._refkeys:
-                if term in item.__getattr__(key):
-                    return True
+        return self.get_contains(term, 'contains')
 
+    # avoid hitting the TPNModel __getattr__
     def __getitem__(self, term):
+        return self.get_contains(term, 'get')
+
+    def get_contains(self, term, action):
         for item in self.all:
             for key in self._refkeys:
-                if term in item.__getattr__(key):
-                    return item
+                keyfound = False
+                if key in item.__dict__:
+                    keyfound = True
+                    if str(term) == str(item.__dict__[key]):
+                        if action == 'get':
+                            return item
+                        else:
+                            return True
+                if key in item.__dict__['data']:
+                    keyfound = True
+                    if str(term) == str(item.__dict__['data'][key]):
+                        if action == 'get':
+                            return item
+                        else:
+                            return True
+                if not keyfound:
+                    raise ValueError(
+                        f'refkey {key} missing from {object.__repr__(item)}')
+        if action == 'get':
+            return None
+        else:
+            return False
 
     def __len__(self):
         return len(self.all)
