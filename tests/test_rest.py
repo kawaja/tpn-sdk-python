@@ -1,104 +1,145 @@
-import unittest
-import requests_mock
-from requests.exceptions import HTTPError, ConnectTimeout
+import testtools
+from requests_mock.contrib import fixture
 
 import telstra_pn
 import telstra_pn.rest
-import telstra_pn.exceptions
+from telstra_pn.exceptions import TPNDataError, TPNAPIUnavailable
 import tests.mocks
 
 
-class TestRest(unittest.TestCase):
+class TestRest(testtools.TestCase):
     def setUp(self):
+        super(TestRest, self).setUp()
         telstra_pn.__flags__['debug'] = True
         self.mr = tests.mocks.mock_responses
 
-    @requests_mock.Mocker()
-    def test_get_success(self, get_mock):
-        get_mock.get(
-            '/',
-            status_code=self.mr['nopath']['GET'].get('status_code', 200),
-            json=self.mr['nopath']['GET']['response'])
+        self.api_mock = self.useFixture(fixture.Fixture())
+
+    def test_get_success(self):
+        tests.mocks.setup_mocks(
+            self.api_mock,
+            [('testpath',)]
+        )
 
         tpns = telstra_pn.rest.ApiSession()
         r = tpns.call_api(
-            path='nopath',
+            path='/testpath',
             body=''
         )
 
-        self.assertEqual(r, self.mr['nopath']['GET']['response'])
+        self.assertEqual(r, self.mr['/testpath'][('default', 'GET')]['json'])
 
-    @requests_mock.Mocker()
-    def test_get_500(self, get_mock):
-        get_mock.get(
-            '/',
-            status_code=self.mr['nopath']['GET'].get('status_code', 500),
-            json=self.mr['nopath']['GET']['response'])
+    def test_get_500(self):
+        tests.mocks.setup_mocks(
+            self.api_mock,
+            [('testpath', 'GET', '500')]
+        )
 
         tpns = telstra_pn.rest.ApiSession()
-        with self.assertRaisesRegex(HTTPError, 'Server Error:.*'):
+        with self.assertRaisesRegex(TPNDataError, 'Server Error:.*'):
             tpns.call_api(
-                path='nopath',
+                path='/testpath',
                 body=''
             )
 
-    @requests_mock.Mocker()
-    def test_post_success(self, post_mock):
-        post_mock.post(
-            '/',
-            status_code=self.mr['nopath']['POST'].get('status_code', 201),
-            json=self.mr['nopath']['POST']['response'])
+    def test_post_success(self):
+        tests.mocks.setup_mocks(
+            self.api_mock,
+            [('/testpath', 'POST')]
+        )
 
         tpns = telstra_pn.rest.ApiSession()
         r = tpns.call_api(
             method='POST',
-            path='nopath',
+            path='/testpath',
             body=''
         )
 
-        self.assertEqual(r, self.mr['nopath']['POST']['response'])
+        self.assertEqual(r, self.mr['/testpath'][('default', 'POST')]['json'])
 
-    @requests_mock.Mocker()
-    def test_post_500(self, post_mock):
-        post_mock.post(
-            '/',
-            status_code=self.mr['nopath']['POST'].get('status_code', 500),
-            json=self.mr['nopath']['POST']['response'])
-
-        tpns = telstra_pn.rest.ApiSession()
-        with self.assertRaisesRegex(HTTPError, 'Server Error:.*'):
-            tpns.call_api(
-                method='POST',
-                path='nopath',
-                body=''
-            )
-
-    @requests_mock.Mocker()
-    def test_post_timeout(self, post_mock):
-        post_mock.post(
-            '/',
-            exc=ConnectTimeout
+    def test_put_success(self):
+        tests.mocks.setup_mocks(
+            self.api_mock,
+            [('/testpath', 'PUT')]
         )
 
         tpns = telstra_pn.rest.ApiSession()
-        with self.assertRaises(telstra_pn.exceptions.TPNAPIUnavailable):
-            tpns.call_api(
-                method='POST',
-                path='nopath',
-                body=''
-            )
+        r = tpns.call_api(
+            method='PUT',
+            path='/testpath',
+            body=''
+        )
 
-    @requests_mock.Mocker()
-    def test_get_timeout(self, get_mock):
-        get_mock.get(
-            '/',
-            exc=ConnectTimeout
+        self.assertEqual(r, self.mr['/testpath'][('default', 'PUT')]['json'])
+
+    def test_delete_success(self):
+        tests.mocks.setup_mocks(
+            self.api_mock,
+            [('/testpath', 'DELETE')]
         )
 
         tpns = telstra_pn.rest.ApiSession()
-        with self.assertRaises(telstra_pn.exceptions.TPNAPIUnavailable):
+        r = tpns.call_api(
+            method='DELETE',
+            path='/testpath',
+            body=''
+        )
+
+        self.assertEqual(r, self.mr['/testpath'][('default', 'DELETE')]['json'])
+
+    def test_lowercase_method(self):
+        tests.mocks.setup_mocks(
+            self.api_mock,
+            [('/testpath', 'POST')]
+        )
+
+        tpns = telstra_pn.rest.ApiSession()
+        r = tpns.call_api(
+            method='post',
+            path='/testpath',
+            body=''
+        )
+
+        self.assertEqual(r, self.mr['/testpath'][('default', 'POST')]['json'])
+
+    def test_post_500(self):
+        tests.mocks.setup_mocks(
+            self.api_mock,
+            [('testpath', 'POST', '500')]
+        )
+
+        tpns = telstra_pn.rest.ApiSession()
+        with self.assertRaisesRegex(TPNDataError, 'Server Error:.*'):
+            tpns.call_api(
+                method='POST',
+                path='/testpath',
+                body=''
+            )
+
+    def test_post_timeout(self):
+        tests.mocks.setup_mocks(
+            self.api_mock,
+            [('testpath', 'POST', 'timeout')]
+        )
+
+        tpns = telstra_pn.rest.ApiSession()
+        with self.assertRaisesRegex(TPNAPIUnavailable, ''):
+            tpns.call_api(
+                method='POST',
+                path='/testpath',
+                body=''
+            )
+
+    def test_get_timeout(self):
+        tests.mocks.setup_mocks(
+            self.api_mock,
+            [('testpath', 'GET', 'timeout')]
+        )
+
+        tpns = telstra_pn.rest.ApiSession()
+        with self.assertRaisesRegex(TPNAPIUnavailable, ''):
             tpns.call_api(
                 method='GET',
-                path='nopath',
+                path='/testpath',
                 body=''
             )

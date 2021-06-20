@@ -1,6 +1,6 @@
 import requests
 from telstra_pn import __flags__
-import telstra_pn.exceptions
+from telstra_pn.exceptions import TPNAPIUnavailable, TPNDataError
 
 default_endpoint = 'https://api.pn.telstra.com'
 stdargs = {'allow_redirects': False}
@@ -9,8 +9,8 @@ stdargs = {'allow_redirects': False}
 class ApiSession():
     def __init__(self):
         self.session = requests.Session()
-        self.auth = None
         self.debug = __flags__.get('debug')
+        self.auth = None
 
     def set_auth(self, auth):
         self.auth = auth
@@ -33,27 +33,23 @@ class ApiSession():
         if 'noauth' in kwargs:
             del kwargs['noauth']
 
+        method = method.upper()
+
+        if self.debug:
+            print(f'{method} {default_endpoint}{path} [{headers}]')
+
+        r = None
+
         if method == 'GET':
-            if self.debug:
-                print(f'GET {default_endpoint}{path} [{headers}]')
             try:
                 r = requests.get(
                     f'{default_endpoint}{path}',
                     headers=headers,
                     **stdargs, **kwargs)
             except BaseException as exc:
-                raise telstra_pn.exceptions.TPNAPIUnavailable(exc)
-
-            if self.debug:
-                print(f'<-- {r.status_code}')
-                print(f'<-- {r.text}')
-            r.raise_for_status()
-            return(r.json())
+                raise TPNAPIUnavailable(exc)
 
         if method == 'POST':
-            if self.debug:
-                print(f'POST {default_endpoint}{path}')
-                print(f'-->{body}')
             try:
                 r = requests.post(
                     f'{default_endpoint}{path}',
@@ -61,10 +57,36 @@ class ApiSession():
                     headers=headers,
                     **stdargs, **kwargs)
             except BaseException as exc:
-                raise telstra_pn.exceptions.TPNAPIUnavailable(exc)
+                raise TPNAPIUnavailable(exc)
 
-            if self.debug:
-                print(f'<-- {r.status_code}')
-                print(f'<-- {r.text}')
+        if method == 'DELETE':
+            try:
+                r = requests.delete(
+                    f'{default_endpoint}{path}',
+                    data=body,
+                    headers=headers,
+                    **stdargs, **kwargs)
+            except BaseException as exc:
+                raise TPNAPIUnavailable(exc)
+
+        if method == 'PUT':
+            try:
+                r = requests.put(
+                    f'{default_endpoint}{path}',
+                    data=body,
+                    headers=headers,
+                    **stdargs, **kwargs)
+            except BaseException as exc:
+                raise TPNAPIUnavailable(exc)
+
+        if r is None:
+            raise TPNAPIUnavailable(f'method {method} not implemented')
+
+        if self.debug:
+            print(f'<-- {r.status_code}')
+            print(f'<-- {r.text}')
+        try:
             r.raise_for_status()
-            return(r.json())
+        except requests.exceptions.HTTPError as exc:
+            raise TPNDataError(exc)
+        return(r.json())
