@@ -1,4 +1,5 @@
 import telstra_pn.rest
+from urllib.parse import urlencode
 from telstra_pn.exceptions import TPNDataError, TPNInvalidLogin
 from telstra_pn.models.tpn_model import TPNModel
 
@@ -7,7 +8,8 @@ class Session(TPNModel):
     def __init__(self,
                  accountid: str = None,
                  username: str = None,
-                 password: str = None) -> None:
+                 password: str = None,
+                 otp: str = None) -> None:
         super().__init__(None)
         self.api_session = telstra_pn.rest.ApiSession()
         self.refresh_if_null = ['customeruuid']
@@ -26,13 +28,20 @@ class Session(TPNModel):
         if not password:
             raise ValueError('Session: password is required')
 
+        login = {
+            'grant_type': 'password',
+            'username': f'{accountid}/{username}',
+            'password': password
+        }
+        if otp is not None:
+            login['otp'] = otp
+
         try:
             response = self.api_session.call_api(
                 path='/is/1.0.0/generatetoken',
                 method='POST',
                 noauth=True,
-                body=f'grant_type=password&'
-                     f'username={accountid}/{username}&password={password}',
+                body=urlencode(login),
                 headers={'content-type': 'application/x-www-form-urlencoded'}
             )
         except TPNDataError as exc:
