@@ -41,7 +41,6 @@ class P2PLinks(TPNListModel):
         self.all = []
 
         for link in data:
-            print(f'adding link: {link["linkid"]}')
             self.all.append(P2PLink(self, **link))
 
 
