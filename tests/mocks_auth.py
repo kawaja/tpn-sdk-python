@@ -7,36 +7,31 @@ MockAuthAccountid = '14322314'
 
 mock_auth_responses = {
     '/is/1.0.0/generatetoken': {
-        'POST': {
-            'response': {
+        ('default', 'POST'): {
+            'json': {
                 'token_type': 'bearer',
                 'expires_in': 6899,
                 'refresh_token': '903c481cb5dffcfc52e292867075037',
                 'access_token': MockAuthSessionKey
             },
             'status_code': 200
+        },
+        ('login_incorrect', 'POST'): {
+            'json': {
+                'error': 'invalid_grant',
+                'error_description': 'Provided Authorization Grant is invalid.'
+            },
+            'status_code': 412
         }
     },
     '/1.0.0/auth/validatetoken': {
-        'GET': {
-            'response': {
+        ('default', 'GET'): {
+            'json': {
                 'customerid': MockAuthCustomerUUID,
                 'userid': MockAuthUserUUID,
                 'username': f'{MockAuthAccountid}/{MockAuthUsername}'
             },
             'status_code': 200
-        }
-    },
-    'nopath': {
-        'POST': {
-            'response': {
-                'testpost': True
-            }
-        },
-        'GET': {
-            'response': {
-                'testget': True
-            }
         }
     }
 }
