@@ -19,7 +19,8 @@ class TestDatacentres(testtools.TestCase):
 
         tests.mocks.setup_mocks(
             self.api_mock,
-            ['generatetoken'])
+            [('generatetoken', 'POST')]
+        )
 
         self.tpns = telstra_pn.Session(
             accountid=accountid, username=username, password=password)
@@ -27,12 +28,23 @@ class TestDatacentres(testtools.TestCase):
     def test_datacentres(self):
         tests.mocks.setup_mocks(
             self.api_mock,
-            ['datacenters'])
+            [('datacenters',)]
+        )
 
-        dcs = self.tpns.Datacentres()
-        self.assertTrue(dcs)
-        self.assertTrue(len(dcs.data['datacenters']), 2)
+        dcs = self.tpns.datacentres
+        self.assertIsNotNone(dcs)
+        self.assertTrue(len(dcs), 2)
+        self.assertTrue('AMLS' in dcs)
+        self.assertTrue('AMEQ' in dcs)
+        self.assertFalse('SYEQ' in dcs)
+        self.assertTrue(tests.mocks.MockDatacentresDC1UUID in dcs)
+        self.assertTrue(tests.mocks.MockDatacentresDC2UUID in dcs)
+        self.assertFalse('676c24ef-0f62-4f11-b405-37a091d57251' in dcs)
+        self.assertEqual(dcs['AMLS'].cityname, 'Melbourne')
+        self.assertFalse(dcs['AMLS'].cityname == 'Sydney')
         self.assertEqual(self.api_mock.call_count, 2)
+        for dc in dcs:
+            self.assertEqual(dc.countryname, 'Australia')
 
         dcs.refresh()
         self.assertEqual(self.api_mock.call_count, 3)
