@@ -21,6 +21,10 @@ class vportstatus(enum.Enum):
     deleted = 'Deleted'
 
 
+class topologystatus(enum.Enum):
+    active = 'active'
+
+
 class latency(enum.Enum):
     low = 1
     standard = 2

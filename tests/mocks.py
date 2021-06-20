@@ -3,6 +3,7 @@ from tests.mocks_auth import *  # noqa
 from tests.mocks_datacentres import *  # noqa
 from tests.mocks_p2plinks import *  # noqa
 from tests.mocks_endpoints import *  # noqa
+from tests.mocks_topologies import *  # noqa
 from requests_mock.contrib.fixture import Fixture
 import re
 
@@ -11,6 +12,7 @@ mock_responses = {
     **mock_auth_responses,  # noqa
     **mock_datacentres_responses,  # noqa
     **mock_p2plinks_responses,  # noqa
+    **mock_topologies_responses,  # noqa
 #    **mock_endpoints_responses  # noqa
 }
 

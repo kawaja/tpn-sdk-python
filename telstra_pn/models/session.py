@@ -15,6 +15,7 @@ class Session(TPNModel):
         self._datacentres = None
         self._p2plinks = None
         self._endpoints = None
+        self._topologies = None
 
         if not accountid:
             raise ValueError('Session: accountid is required')
@@ -84,3 +85,10 @@ class Session(TPNModel):
             self._endpoints = telstra_pn.Endpoints(self)
 
         return self._endpoints
+
+    @property
+    def topologies(self) -> telstra_pn.Topologies:
+        if self._topologies is None:
+            self._topologies = telstra_pn.Topologies(self)
+
+        return self._topologies
