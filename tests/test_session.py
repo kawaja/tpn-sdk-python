@@ -3,7 +3,7 @@ from requests_mock.contrib import fixture
 import testtools
 
 import telstra_pn
-import telstra_pn.exceptions
+from telstra_pn.exceptions import TPNInvalidLogin
 import tests.mocks
 
 username = tests.mocks.MockAuthUsername
@@ -28,6 +28,26 @@ class TestSessionLoginFailures(unittest.TestCase):
             telstra_pn.Session(username=username, accountid=accountid)
 
 
+class TestSessionGenerateToken(testtools.TestCase):
+    def test_login_incorrect(self):
+        telstra_pn.__flags__['debug'] = True
+
+        self.api_mock = self.useFixture(fixture.Fixture())
+        tests.mocks.setup_mocks(
+            self.api_mock,
+            [('generatetoken', 'POST', 'login_incorrect')]
+        )
+
+        with self.assertRaisesRegex(TPNInvalidLogin, ''):
+            telstra_pn.Session(accountid=accountid,
+                               username=username,
+                               password=password)
+
+        # with self.assertRaises(TPNDataError):
+        #     tpns = telstra_pn.Session(
+        #         accountid=accountid, username=username, password=password)
+
+
 class TestSession(testtools.TestCase):
     def setUp(self):
         super(TestSession, self).setUp()
@@ -37,23 +57,28 @@ class TestSession(testtools.TestCase):
 
         tests.mocks.setup_mocks(
             self.api_mock,
-            ['generatetoken'])
+            [('generatetoken', 'POST'), ('validatetoken',)]
+        )
 
         self.tpns = telstra_pn.Session(
             accountid=accountid, username=username, password=password)
 
     def test_login(self):
-        self.assertTrue(self.tpns)
+        self.assertIsNotNone(self.tpns)
         self.assertEqual(self.tpns.sessionkey, tests.mocks.MockAuthSessionKey)
+        # calls: generatetoken
+        self.assertEqual(self.api_mock.call_count, 1)
         self.assertEqual(self.tpns.token_type, 'bearer')
         self.assertTrue(self.tpns.expires_in)
         self.assertTrue(self.tpns.refresh_token)
-        self.assertEqual(self.api_mock.call_count, 1)
+        # calls: +validatetoken
+        self.assertEqual(self.api_mock.call_count, 2)
 
     def test_validate(self):
         tests.mocks.setup_mocks(
             self.api_mock,
-            ['validatetoken'])
+            [('validatetoken',)]
+        )
 
         self.tpns.validate()
         print(self.tpns.data)
