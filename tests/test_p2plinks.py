@@ -43,6 +43,8 @@ class TestP2PLinks(testtools.TestCase):
         self.assertFalse('Test link #3' in links)
         self.assertTrue(tests.mocks.MockLink1ID in links)
         self.assertTrue(tests.mocks.MockLink2ID in links)
+        self.assertEqual(links['Test link #1'].description, 'Test link #1')
+        self.assertEqual(links['Test link #1'].tag, 'production')
         self.assertFalse('cb46ec44-4b5b-4fd9-80c9-dd52c1805ff0' in links)
         self.assertEqual(links['Test link #1'].tag, 'production')
         # calls: generatetoken, validatetoken, inventory/links/customer

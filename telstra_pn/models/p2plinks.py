@@ -54,10 +54,8 @@ class P2PLink(TPNModel):
         self._update_data(kwargs)
 
     def _update_data(self, data):
-        self.description = data.get('description')
         self.id = data.get('linkid')
         self.latency = latency(int(data.get('latency')))
-        self.tag = data.get('tag')
         self.endpoints = data.get('connections')
         self.status = status(int(data.get('linkStatus')))
         if self.debug:

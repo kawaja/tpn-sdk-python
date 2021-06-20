@@ -196,7 +196,7 @@ mock_p2plinks_responses = {
                 {
                     'aggregateTags': [],
                     'tags': {
-                        'flowid': f'{MockLink2ID}',
+                        'flowid': MockLink2ID,
                         'direction': 'forward'
                     },
                     'dps': {
@@ -209,7 +209,7 @@ mock_p2plinks_responses = {
                 {
                     'aggregateTags': [],
                     'tags': {
-                        'flowid': f'{MockLink2ID}',
+                        'flowid': MockLink2ID,
                         'direction': 'reverse'
                     },
                     'dps': {
@@ -222,7 +222,7 @@ mock_p2plinks_responses = {
                 {
                     'aggregateTags': [],
                     'tags': {
-                        'flowid': f'{MockLink2ID}',
+                        'flowid': MockLink2ID,
                         'direction': 'forward'
                     },
                     'dps': {
@@ -235,7 +235,7 @@ mock_p2plinks_responses = {
                 {
                     'aggregateTags': [],
                     'tags': {
-                        'flowid': f'{MockLink2ID}',
+                        'flowid': MockLink2ID,
                         'direction': 'reverse'
                     },
                     'dps': {
