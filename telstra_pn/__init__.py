@@ -1,5 +1,10 @@
 __version__ = "0.1"
-__flags__ = {'debug': False}
+__flags__ = {
+    'debug': False,
+    'debug_mocks': False,
+    'debug_getattr': False,
+    'debug_api': False
+}
 
 # import codes
 from telstra_pn.codes import *  # noqa
