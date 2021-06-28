@@ -48,6 +48,9 @@ class Endpoints(TPNListModel):
             portdata = {**portdata, **port}
             self.additem(Endpoint(self, **portdata))
 
+    def display(self):
+        return f'{len(self)} endpoints'
+
 
 class Endpoint(TPNModel, TPNModelSubclassesMixin):
     def __init__(self, parent, **data):
@@ -76,8 +79,7 @@ class Endpoint(TPNModel, TPNModelSubclassesMixin):
     def display(self) -> str:
         if self.name:
             return self.name
-        if self.switchname and self.portno:
-            return f'{self.switchname}.{self.portno[0]}'
+        return ''
 
 
 class SwitchPort(Endpoint):
@@ -100,14 +102,11 @@ class SwitchPort(Endpoint):
             )
         self.port = portarr[0]
         newid: str = data.get('endpointuuid')
-        if getattr(self, 'id', None) is None:
-            self.id = newid
-        else:
-            if self.id != newid:
-                raise TPNRefreshInconsistency(
-                    'SwitchPort endpointuuid changed from '
-                    f'{self.id} to {newid}'
-                )
+        if self.id != newid:
+            raise TPNRefreshInconsistency(
+                'SwitchPort endpointuuid changed from '
+                f'{self.id} to {newid}'
+            )
 
         dc = self.session.datacentres[self.data.get('datacenteruuid')]
         if dc:
@@ -117,6 +116,13 @@ class SwitchPort(Endpoint):
 
 #        for vlan in port.get('vport', []):
 #            self.vlans.append(VLAN(self, **vlan))
+
+    def display(self) -> str:
+        if self.name:
+            return self.name
+        if self.switchname and self.portno:
+            return f'{self.switchname}.{self.portno[0]}'
+        return ''
 
 
 class VPortEncapsulation(TPNModel):

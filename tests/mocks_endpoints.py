@@ -1,3 +1,4 @@
+import copy
 from tests.mocks_datacentres import MockDatacentresDC1UUID
 from tests.mocks_auth import MockAuthCustomerUUID
 from tests.mocks_topologies import MockTopo1UUID
@@ -5,6 +6,7 @@ from tests.mocks_topologies import MockTopo1UUID
 
 MockEndpoint1UUID = '8bcca2cf-e166-4638-992d-d6e901c6e93a'
 MockEndpoint2UUID = 'ac8348d4-9e48-464e-ac6c-e7a76007e7b3'
+MockEndpoint3UUID = 'c54b030a-d733-4f8c-829a-a6f6b881a22e'
 
 endpoint1_switchport = {
     'creationdate': 1500941038,
@@ -24,6 +26,13 @@ endpoint1_switchport = {
     'topologytaguuid': [MockTopo1UUID]
 }
 
+endpoint1_switchport_missing_portno = copy.deepcopy(endpoint1_switchport)
+del endpoint1_switchport_missing_portno['portno']
+endpoint1_switchport_no_ports = copy.deepcopy(endpoint1_switchport)
+endpoint1_switchport_no_ports['portno'] = []
+endpoint1_switchport_two_ports = copy.deepcopy(endpoint1_switchport)
+endpoint1_switchport_two_ports['portno'] = ['96', '95']
+
 endpoint2_switchport = {
     'creationdate': 1500941038,
     'customeruuid': MockAuthCustomerUUID,
@@ -35,6 +44,24 @@ endpoint2_switchport = {
     'name': 'ep2',
     'endpointuuid': MockEndpoint2UUID,
     'portno': ['98'],
+    'status': 'deployed',
+    'switchcode': 'SW000000223D6C0128',
+    'switchname': 'ofsw3.pen.amls',
+    'switchuuid': '14f93516-3b72-4179-8df0-051ff6b21c46',
+    'topologytaguuid': [MockTopo1UUID]
+}
+
+endpoint3_switchport = {
+    'creationdate': 1500941038,
+    'customeruuid': MockAuthCustomerUUID,
+    'datacentercode': 'AMLS',
+    'enabled': True,
+    'endpointTypeuuid': '32eea883-16cf-11e8-902e-000c293805b1',
+    'inventoryLocationuuid': '2c02f224-ccbf-11e5-b670-000c293805b1',
+    'lastmodifieddate': 1624067308,
+    'name': '',
+    'endpointuuid': MockEndpoint3UUID,
+    'portno': ['99'],
     'status': 'deployed',
     'switchcode': 'SW000000223D6C0128',
     'switchname': 'ofsw3.pen.amls',
@@ -98,6 +125,9 @@ mock_endpoints_responses = {
                 }, {
                     'datacenteruuid': MockDatacentresDC1UUID,
                     'endpointuuid': MockEndpoint2UUID
+                }, {
+                    'datacenteruuid': MockDatacentresDC1UUID,
+                    'endpointuuid': MockEndpoint3UUID
                 }]
             }
         },
@@ -108,10 +138,22 @@ mock_endpoints_responses = {
         }
     },
     f'/eis/1.0.0/endpoint/endpointuuid/{MockEndpoint1UUID}': {
-        ('default', 'GET'): {'json': endpoint1_switchport}
+        ('default', 'GET'): {'json': endpoint1_switchport},
+        ('noportno', 'GET'): {'json': endpoint1_switchport_missing_portno},
+        ('noports', 'GET'): {'json': endpoint1_switchport_no_ports},
+        ('twoports', 'GET'): {'json': endpoint1_switchport_two_ports}
     },
     f'/eis/1.0.0/endpoint/endpointuuid/{MockEndpoint2UUID}': {
-        ('default', 'GET'): {'json': endpoint2_switchport}
+        ('default', 'GET'): {'json': endpoint2_switchport},
+        ('noportno', 'GET'): {'json': endpoint2_switchport},
+        ('noports', 'GET'): {'json': endpoint2_switchport},
+        ('twoports', 'GET'): {'json': endpoint2_switchport}
+    },
+    f'/eis/1.0.0/endpoint/endpointuuid/{MockEndpoint3UUID}': {
+        ('default', 'GET'): {'json': endpoint3_switchport},
+        ('noportno', 'GET'): {'json': endpoint3_switchport},
+        ('noports', 'GET'): {'json': endpoint3_switchport},
+        ('twoports', 'GET'): {'json': endpoint3_switchport}
     },
     '/eis/1.0.0/switchporttype': {
         ('default', 'GET'): {'json': endpointtypes}

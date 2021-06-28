@@ -83,27 +83,96 @@ class TestEndpoints(testtools.TestCase):
         self.tpns = telstra_pn.Session(
             accountid=accountid, username=username, password=password)
 
-    def test_endpoints(self):
-        print(f'mock_responses: {tests.mocks.mock_responses}')
+    def test_endpoints_missing_port(self):
+        setup_mocks(self.api_mock,
+                    [('endpoints', ),
+                     ('endpoint/endpointuuid', 'GET', 'noportno'),
+                     ('switchporttype', ), ('datacenters', )])
+
+        with self.assertRaisesRegex(
+                telstra_pn.exceptions.TPNRefreshInconsistency,
+                'detail does not contain "portno" field'):
+            self.eps = self.tpns.endpoints
+
+    def test_endpoints_zero_ports(self):
+        setup_mocks(self.api_mock,
+                    [('endpoints', ),
+                     ('endpoint/endpointuuid', 'GET', 'noports'),
+                     ('switchporttype', ), ('datacenters', )])
+
+        with self.assertRaisesRegex(
+                telstra_pn.exceptions.TPNRefreshInconsistency,
+                'detail contains 0 ports'):
+            self.eps = self.tpns.endpoints
+
+    def test_endpoints_two_ports(self):
+        setup_mocks(self.api_mock,
+                    [('endpoints', ),
+                     ('endpoint/endpointuuid', 'GET', 'twoports'),
+                     ('switchporttype', ), ('datacenters', )])
+
+        with self.assertRaisesRegex(
+                telstra_pn.exceptions.TPNRefreshInconsistency,
+                'detail contains 2 ports'):
+            self.eps = self.tpns.endpoints
+
+
+class TestEndpointsBehaviour(testtools.TestCase):
+    def setUp(self):
+        super(TestEndpointsBehaviour, self).setUp()
+        telstra_pn.__flags__['debug'] = True
+        telstra_pn.__flags__['debug_mocks'] = True
+        telstra_pn.__flags__['debug_getattr'] = False
+
+        self.api_mock = self.useFixture(fixture.Fixture())
+
+        setup_mocks(
+            self.api_mock,
+            [('generatetoken', 'POST'), ('validatetoken',)]
+        )
+
+        self.tpns = telstra_pn.Session(
+            accountid=accountid, username=username, password=password)
+
         setup_mocks(self.api_mock, [('endpoints', ),
                                     ('endpoint/endpointuuid', ),
                                     ('switchporttype', ),
                                     ('datacenters', )])
 
-        eps = self.tpns.endpoints
-        self.assertTrue(eps)
-        self.assertEqual(len(eps.all), 2)
-        self.assertEqual(len(eps), 2)
-        self.assertTrue(tests.mocks.MockEndpoint1UUID in eps)
-        self.assertTrue('ep1' in eps)
-        self.assertTrue(tests.mocks.MockEndpoint2UUID in eps)
-        self.assertEqual(eps['ep1'].datacentercode, 'AMLS')
+        self.eps = self.tpns.endpoints
+
+    def test_endpoints(self):
+        self.assertTrue(self.eps)
+        self.assertEqual(len(self.eps), 3)
+
+    def test_endpoints_contains(self):
+        self.assertTrue(tests.mocks.MockEndpoint1UUID in self.eps)
+        self.assertTrue('ep1' in self.eps)
+        self.assertTrue(tests.mocks.MockEndpoint2UUID in self.eps)
+
+    def test_endpoints_contains_missing(self):
+        self.assertFalse('ep5' in self.eps)
+
+    def test_endpoints_get_datcentercode(self):
+        self.assertEqual(self.eps['ep1'].datacentercode, 'AMLS')
+
+    def test_endpoints_refresh(self):
         # calls: generatetoken, validatetoken, switchporttype,
-        # endpointlist, datacentres, 2 x endpoints
-        self.assertEqual(self.api_mock.call_count, 7,
+        # endpointlist, datacentres, 3 x endpoints
+        self.assertEqual(self.api_mock.call_count, 8,
+                         mock_history(self.api_mock))
+        self.eps.refresh()
+        # calls: + endpointlist, 3 x endpoints
+        self.assertEqual(self.api_mock.call_count, 12,
                          mock_history(self.api_mock))
 
-        eps.refresh()
-        # calls: + endpointlist, 2 x endpoints
-        self.assertEqual(self.api_mock.call_count, 10,
-                         mock_history(self.api_mock))
+    def test_endpoints_display(self):
+        self.assertEqual(str(self.eps), '3 endpoints')
+
+    def test_endpoints_single_display_name(self):
+        self.assertEqual(str(self.eps['ep1']), 'AMLS / ep1')
+
+    def test_endpoints_single_display_noname(self):
+        self.assertEqual(
+            str(self.eps[tests.mocks_endpoints.MockEndpoint3UUID]),
+            'AMLS / ofsw3.pen.amls.99')
