@@ -9,14 +9,18 @@
             "type": "python",
             "request": "launch",
             "program": "${file}",
-            "console": "integratedTerminal"
+            "console": "integratedTerminal",
+            "env": {"PYTHONPATH": "."},
+            "cwd": "${workspaceRoot}",
+            "justMyCode": false
         },
         {
             "name": "Python: Debug Tests",
             "type": "python",
             "request": "test",
             "console": "integratedTerminal",
-            "env": {"PYTEST_ADDOPTS": "--no-cov"}
+            "env": {"PYTEST_ADDOPTS": "--no-cov"},
+            "justMyCode": false
         }
     ]
 }
