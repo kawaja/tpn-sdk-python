@@ -20,3 +20,7 @@ class TPNLogicalError(RuntimeError):
 
 class TPNRefreshInconsistency(TPNLogicalError):
     pass
+
+
+class TPNLibraryInternalError(TPNLogicalError):
+    '''The TPN Library has an implementation issue'''
