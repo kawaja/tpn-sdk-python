@@ -9,7 +9,7 @@ stdargs = {'allow_redirects': False}
 class ApiSession():
     def __init__(self):
         self.session = requests.Session()
-        self.debug = __flags__.get('debug')
+        self.debug = __flags__.get('debug_api')
         self.auth = None
 
     def set_auth(self, auth):
