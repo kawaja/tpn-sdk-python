@@ -1,6 +1,8 @@
+import telstra_pn
 from tests.mocks_rest import *  # noqa
 from tests.mocks_auth import *  # noqa
 from tests.mocks_datacentres import *  # noqa
+from tests.mocks_endpoints import *  # noqa
 from tests.mocks_p2plinks import *  # noqa
 from tests.mocks_endpoints import *  # noqa
 from tests.mocks_topologies import *  # noqa
@@ -11,6 +13,7 @@ mock_responses = {
     **mock_rest_responses,  # noqa
     **mock_auth_responses,  # noqa
     **mock_datacentres_responses,  # noqa
+    **mock_endpoints_responses,  # noqa
     **mock_p2plinks_responses,  # noqa
     **mock_topologies_responses,  # noqa
 #    **mock_endpoints_responses  # noqa
@@ -33,30 +36,36 @@ def setup_mocks(mock: Fixture, mockspecs: tuple):
             mockspec.append('GET')
         if len(mockspec) == 2:
             mockspec.append('default')
-        # print(f'm: {mockspec}')
+        if telstra_pn.__flags__['debug_mocks']:
+            print(f'looking for mock for: {mockspec}')
         (mpathpat, mmethod, mvariant) = mockspec
         for rpath in mock_responses:
-            # print(f'searching {rpath}')
+            if telstra_pn.__flags__['debug_mocks']:
+                print(f'searching {rpath}: ')
             if re.search(mpathpat, rpath):
                 if (mvariant, mmethod) in mock_responses[rpath]:
-                    # print(f'+ mmethod: {mmethod}, rpath: {rpath}')
+                    if telstra_pn.__flags__['debug_mocks']:
+                        print(f'+ mmethod: {mmethod}, rpath: {rpath}')
                     apimocks.setdefault((mmethod, rpath), [])
-                    # print(f'+ mvariant: {mvariant}, apimocks: {apimocks}')
+                    if telstra_pn.__flags__['debug_mocks']:
+                        print(f'+ mvariant: {mvariant}, apimocks: {apimocks}')
                     apimocks[(mmethod, rpath)].append(
                         mock_responses[rpath][(mvariant, mmethod)])
-
-    # print(f'apimocks: {apimocks}')
 
     for rkey in apimocks.keys():
         mock_response = apimocks[rkey]
         (method, path) = rkey
-        # print(f'mock_response before: {mock_response}')
+
+        # fill in missing status codes
         for item in mock_response:
             if 'exc' not in item:
                 item['status_code'] = (
-                    item.get('status_code') or default_code[method])
-        # print(f'mock_response after: {mock_response}')
-        # print(f'adding mock for {method} {path} ')
+                    item.get('status_code') or default_code.get(method))
+
+        if telstra_pn.__flags__['debug_mocks']:
+            print(f'adding mock for {method} {path} ')
+
+        # create the mocks
         mock.request(method, path, mock_response)
 
 
