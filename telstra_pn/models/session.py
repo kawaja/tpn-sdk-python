@@ -45,6 +45,7 @@ class Session(TPNModel):
                 headers={'content-type': 'application/x-www-form-urlencoded'}
             )
         except TPNDataError as exc:
+            print(f'session exception: {exc}')
             if exc.status_code == 412:
                 raise TPNInvalidLogin()
             raise(exc)
@@ -57,47 +58,53 @@ class Session(TPNModel):
         self.data = {**self.data, **response}
 
     def validate(self) -> None:
-        self.get_data()
+        self.refresh()
 
-    def get_data(self) -> None:
+    def _get_data(self) -> None:
         response = self.api_session.call_api(
             path='/1.0.0/auth/validatetoken'
         )
 
-        response['useruuid'] = response['userid']
-        response['customeruuid'] = response['customerid']
-        del response['userid']
-        del response['customerid']
-        self.data = {**self.data, **response}
+        return response
 
-    # debugging note:
-    # if an AttributeError occurs within the setup of any of these
-    # models, it will be re-raised and appear as if the model itself
-    # does not exist. Use the __flags__['debug_getattr'] flag to debug
+    def _update_data(self, data: dict) -> None:
+        data['useruuid'] = data['userid']
+        data['customeruuid'] = data['customerid']
+        del data['userid']
+        del data['customerid']
+        self.data = {**self.data, **data}
+
     @property
     def datacentres(self) -> telstra_pn.Datacentres:
-        if self._datacentres is None:
+        if getattr(self, '_datacentres', None) is None:
             self._datacentres = telstra_pn.Datacentres(self)
 
-        return self._datacentres
+        return getattr(self, '_datacentres', None)
 
     @property
     def p2plinks(self) -> telstra_pn.P2PLinks:
-        if self._p2plinks is None:
+        if getattr(self, '_p2plinks', None) is None:
             self._p2plinks = telstra_pn.P2PLinks(self)
 
-        return self._p2plinks
+        return getattr(self, '_p2plinks', None)
 
     @property
     def endpoints(self) -> telstra_pn.Endpoints:
-        if self._endpoints is None:
+        if getattr(self, '_endpoints', None) is None:
             self._endpoints = telstra_pn.Endpoints(self)
 
-        return self._endpoints
+        return getattr(self, '_endpoints', None)
+
+    # @property
+    # def endpointtypes(self) -> telstra_pn.EndpointTypes:
+    #     if getattr(self, '_endpointtypes', None) is None:
+    #         self._endpointtypes = telstra_pn.EndpointTypes(self)
+
+    #     return getattr(self, '_endpointtypes', None)
 
     @property
     def topologies(self) -> telstra_pn.Topologies:
-        if self._topologies is None:
+        if getattr(self, '_topologies', None) is None:
             self._topologies = telstra_pn.Topologies(self)
 
-        return self._topologies
+        return getattr(self, '_topologies', None)

@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch
 from requests_mock.contrib import fixture
 import testtools
 
@@ -60,8 +61,10 @@ class TestSession(testtools.TestCase):
             [('generatetoken', 'POST'), ('validatetoken',)]
         )
 
-        self.tpns = telstra_pn.Session(
-            accountid=accountid, username=username, password=password)
+        self.tpns = telstra_pn.Session(accountid=accountid,
+                                       username=username,
+                                       password=password,
+                                       otp=123456)
 
     def test_login(self):
         self.assertIsNotNone(self.tpns)
@@ -87,3 +90,23 @@ class TestSession(testtools.TestCase):
                         tests.mocks.MockAuthCustomerUUID)
         self.assertTrue(self.tpns.useruuid, tests.mocks.MockAuthUserUUID)
         self.assertEqual(self.api_mock.call_count, 2)
+
+    @patch('telstra_pn.Datacentres')
+    def test_datacentres(self, mock):
+        self.tpns.datacentres
+        self.assertEqual(mock.call_count, 1)
+
+    @patch('telstra_pn.P2PLinks')
+    def test_p2plinks(self, mock):
+        self.tpns.p2plinks
+        self.assertEqual(mock.call_count, 1)
+
+    @patch('telstra_pn.Endpoints')
+    def test_endpoints(self, mock):
+        self.tpns.endpoints
+        self.assertEqual(mock.call_count, 1)
+
+    @patch('telstra_pn.Topologies')
+    def test_topologies(self, mock):
+        self.tpns.topologies
+        self.assertEqual(mock.call_count, 1)
