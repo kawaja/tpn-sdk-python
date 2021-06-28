@@ -5,3 +5,4 @@ __pycache__
 .venv
 cov.xml
 realtest.py
+integration_test_credentials.py
