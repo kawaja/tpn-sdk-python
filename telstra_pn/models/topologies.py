@@ -9,10 +9,11 @@ class Topologies(TPNListModel):
         super().__init__(session)
         self.vnf = []
         self._refkeys = ['topologyname', 'topologyuuid']
+        self._primary_key = 'uuid'
 
-        self.get_data()
+        self.refresh()
 
-    def get_data(self):
+    def _get_data(self) -> list:
         response = self.session.api_session.call_api(
             path='/ttms/1.0.0/topology_tag'
         )
@@ -20,16 +21,16 @@ class Topologies(TPNListModel):
         if self.debug:
             print(f'Topologies.get_data.response: {response}')
 
-        self._update_data(response)
+        return response
 
-    def display(self):
-        return(f'{len(self.all)} TPN topologies')
-
-    def _update_data(self, data):
+    def _update_data(self, data: list):
         self.data = {**self.data, 'list': data}
 
         for topo in data:
-            self.all.append(Topology(self, **topo))
+            self.additem(Topology(self, **topo))
+
+    def display(self):
+        return(f'{len(self)} topologies')
 
 
 class Topology(TPNModel):

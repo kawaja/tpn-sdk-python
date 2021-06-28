@@ -21,36 +21,49 @@ class TestTopologies(testtools.TestCase):
         self.api_mock = self.useFixture(fixture.Fixture())
 
         setup_mocks(
-            self.api_mock,
-            [('generatetoken', 'POST'), ('validatetoken',)]
+            self.api_mock, [
+                ('generatetoken', 'POST'),
+                ('validatetoken',),
+                ('topology_tag$',)
+            ]
         )
 
         self.tpns = telstra_pn.Session(
             accountid=accountid, username=username, password=password)
 
-    def test_topologies(self):
-        setup_mocks(
-            self.api_mock,
-            [('topology_tag$',)]
-        )
+        self.topos = self.tpns.topologies
 
-        topos = self.tpns.topologies
-        self.assertIsNotNone(topos)
-        self.assertEqual(len(topos), 2)
-        self.assertEqual(str(topos), '2 TPN topologies')
-        self.assertTrue('Test Topo #1' in topos)
-        self.assertTrue('Test Topo #2' in topos)
-        self.assertTrue(tests.mocks.MockTopo1UUID in topos)
-        self.assertTrue(tests.mocks.MockTopo2UUID in topos)
-        self.assertFalse('5aaf9a16-1ecb-4ea9-96d1-adbaefa14e7e' in topos)
-        self.assertEqual(topos['Test Topo #1'].description,
+    def test_topologies(self):
+        self.assertIsNotNone(self.topos)
+        self.assertEqual(len(self.topos), 2)
+
+    def test_topologies_contains(self):
+        self.assertTrue('Test Topo #1' in self.topos)
+        self.assertTrue('Test Topo #2' in self.topos)
+        self.assertTrue(tests.mocks.MockTopo1UUID in self.topos)
+        self.assertTrue(tests.mocks.MockTopo2UUID in self.topos)
+
+    def test_topologies_contains_missing(self):
+        self.assertFalse('5aaf9a16-1ecb-4ea9-96d1-adbaefa14e7e' in self.topos)
+
+    def test_topologies_get_description(self):
+        self.assertEqual(self.topos['Test Topo #1'].description,
                          'Test Topo Description #1')
-        self.assertFalse(topos['Test Topo #2'].description == 'Sydney')
-        self.assertEqual(self.api_mock.call_count, 2,
-                         mock_history(self.api_mock))
-        for topo in topos:
+        self.assertFalse(self.topos['Test Topo #2'].description == 'Sydney')
+
+    def test_topologies_iteration(self):
+        for topo in self.topos:
             self.assertEqual(topo.status, topologystatus.active)
 
-        topos.refresh()
+    def test_topologies_refresh(self):
+        self.assertEqual(self.api_mock.call_count, 2,
+                         mock_history(self.api_mock))
+        self.topos.refresh()
         self.assertEqual(self.api_mock.call_count, 3,
                          mock_history(self.api_mock))
+
+    def test_topologies_display(self):
+        self.assertEqual(str(self.topos), '2 topologies')
+
+    def test_topologies_single_display(self):
+        self.assertEqual(str(self.topos['Test Topo #1']), 'Test Topo #1')

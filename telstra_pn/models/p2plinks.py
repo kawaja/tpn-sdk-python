@@ -10,10 +10,11 @@ class P2PLinks(TPNListModel):
     def __init__(self, session):
         super().__init__(session)
         self._refkeys = ['description', 'linkid', 'tag']
+        self._primary_key = 'linkid'
 
-        self.get_data()
+        self.refresh()
 
-    def get_data(self):
+    def _get_data(self) -> list:
         cust = self.session.customeruuid
         try:
             response = self.session.api_session.call_api(
@@ -22,26 +23,25 @@ class P2PLinks(TPNListModel):
         except TPNDataError as exc:
             # 400 == no links returned
             if exc.status_code == 400:
-                self.all = []
-                return
+                self.reset()
+                return []
 
         if self.debug:
             print(f'P2PLinks.get_data.response: {response}')
 
-        self._update_data(response)
+        return response
 
     def create(self, endpoints: list, latency: latency, duration_hours: int,
                bandwidth_mbps: int, renewal_option: renewal,
                topology: str) -> str:
         # create
-        self.get_data()
+        self._get_data()
 
-    def _update_data(self, data):
+    def _update_data(self, data: list) -> None:
         self.data = {**self.data, 'list': data}
-        self.all = []
 
         for link in data:
-            self.all.append(P2PLink(self, **link))
+            self.additem(P2PLink(self, **link))
 
 
 class P2PLink(TPNModel):
@@ -52,7 +52,7 @@ class P2PLink(TPNModel):
 
         self._update_data(kwargs)
 
-    def _update_data(self, data):
+    def _update_data(self, data: dict):
         self.id = data.get('linkid')
         self.latency = latency(int(data.get('latency')))
         self.endpoints = data.get('connections')
@@ -67,7 +67,7 @@ class P2PLink(TPNModel):
         if self.debug:
             print(f' . added {len(self.contracts)} contracts')
 
-    def get_data(self):
+    def _get_data(self) -> dict:
         response = self.session.api_session.call_api(
             path=f'/1.0.0/inventory/links/{self.id}'
         )
@@ -75,7 +75,7 @@ class P2PLink(TPNModel):
         if self.debug:
             print(f'P2PLink.get_data.response: {response}')
 
-        self._update_data(response)
+        return response
 
     def delete(self) -> None:
         response = self.session.api_session.call_api(
@@ -107,18 +107,19 @@ class P2PContracts(TPNListModel):
         super().__init__(parent.session)
         self.parent = parent
         self._refkeys = ['contractid', 'seqno']
+        self._primary_key = 'contractid'
 
         self._update_data(contracts)
 
     def display(self) -> None:
-        return(f'{len(self.all)} Contracts')
+        return(f'{len(self)} contract(s)')
 
     def _update_data(self, data):
         self.data = {**self.data, 'list': data}
-        self.all = []
+        self.reset()
 
         for contract in data:
-            self.all.append(P2PContract(self.parent, **contract))
+            self.additem(P2PContract(self.parent, **contract))
 
 
 class P2PContract(TPNModel):
@@ -135,7 +136,10 @@ class P2PContract(TPNModel):
 
         self._update_data(kwargs, linkid=parent.id)
 
-    def _update_data(self, data: dict, linkid: str) -> None:
+    def _update_data(self, data: dict, linkid: str = None) -> None:
+        if linkid is None:
+            linkid = data.get('linkid')
+
         newid: str = data.get('contractid')
         if getattr(self, 'id', None) is None:
             self.id = newid
@@ -163,7 +167,7 @@ class P2PContract(TPNModel):
         self.currency = data.get('currencyID')
         self.renewal = renewal(int(data.get('renewal-option')))
 
-    def get_data(self):
+    def _get_data(self):
         response = self.session.api_session.call_api(
             path=f'/1.0.0/inventory/links/{self.linkid}/contract/{self.id}'
         )
@@ -171,8 +175,8 @@ class P2PContract(TPNModel):
         if self.debug:
             print(f'P2PContract.get_data.response: {response}')
 
-        self._update_data(response, response.get('linkid'))
+        return response
 
     def delete(self) -> None:
         # delete
-        self.get_data()
+        self._get_data()
