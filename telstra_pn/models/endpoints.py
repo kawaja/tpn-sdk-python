@@ -1,19 +1,35 @@
-from telstra_pn.models.tpn_model import TPNModel, TPNListModel
-from telstra_pn.exceptions import TPNLogicalError, TPNRefreshInconsistency
+import enum
+from telstra_pn.models.tpn_model import (TPNModel, TPNListModel,
+                                         TPNModelSubclassesMixin)
+from telstra_pn.exceptions import (TPNLogicalError, TPNRefreshInconsistency)
 from telstra_pn.codes import vportstatus
 from telstra_pn import __flags__
 
-# Datacentres is a low change rate resource
+# Endpoints is are high change rate resource
+# Contracts is are high change rate resource
 
 
 class Endpoints(TPNListModel):
     def __init__(self, session):
         super().__init__(session)
-        self._refkeys = ['endpointuuid']
+        self._refkeys = ['endpointuuid', 'name']
+        self._primary_key = 'endpointuuid'
 
-        self.get_data()
+        _endpoint_types = self._populate_endpoint_types()
+        self.types = enum.Enum('EndpointType', _endpoint_types)
 
-    def get_data(self):
+        self.refresh()
+
+    def _populate_endpoint_types(self):
+        response = self.session.api_session.call_api(
+            path='/eis/1.0.0/switchporttype'
+        )
+        return {
+            eptype['switchporttypename']: eptype['switchporttypeuuid']
+            for eptype in response
+        }
+
+    def _get_data(self) -> list:
         cust = self.session.customeruuid
         response = self.session.api_session.call_api(
             path=f'/1.0.0/inventory/endpoints/customeruuid/{cust}'
@@ -22,42 +38,42 @@ class Endpoints(TPNListModel):
         if self.debug:
             print(f'Endpoints.get_data.response: {response}')
 
-        self._update_data(response.get('endpointlist', []))
+        return response.get('endpointlist', [])
 
-    def _update_data(self, data):
+    def _update_data(self, data: list) -> None:
         self.data = {**self.data, 'list': data}
 
         for port in data:
-            self.all.append(Endpoint(self, **port))
+            portdata = Endpoint._get_data(self.session, port['endpointuuid'])
+            portdata = {**portdata, **port}
+            self.additem(Endpoint(self, **portdata))
 
 
-class Endpoint(TPNModel):
-    def __new__(self, parent, **data):
+class Endpoint(TPNModel, TPNModelSubclassesMixin):
+    def __init__(self, parent, **data):
         super().__init__(parent.session)
+
         self.data = data
+        self.id = data['endpointuuid']
+        self.parent = parent
+        self.refresh_if_null = [
+            'creationdate', 'customeruuid', 'datacentercode', 'enabled',
+            'lastmodifieddate', 'status', 'name'
+        ]
+        self._update_data(data)
 
-        self.get_data(self)
-
-        return self.detect_type()
-
-    def _update_data(self, data: dict):
-        self.data = {**data}
-
-    def detect_type(self):
-        if 'datacenter' in self.data:
-            return SwitchPort(self.data['datacenter'][0])
-
-    def get_data(self):
-        response = self.session.api_session.call_api(
-            path=f'/eis/1.0.0/endpoint/endpointuuid/{self.id}'
+    @staticmethod
+    def _get_data(session, id) -> dict:
+        response = session.api_session.call_api(
+            path=f'/eis/1.0.0/endpoint/endpointuuid/{id}'
         )
 
-        if self.debug:
+        if __flags__['debug']:
             print(f'Endpoint.get_data.response: {response}')
 
-        self._update_data(response)
+        return response
 
-    def display(self):
+    def display(self) -> str:
         if self.name:
             return self.name
         if self.switchname and self.portno:
@@ -65,18 +81,25 @@ class Endpoint(TPNModel):
 
 
 class SwitchPort(Endpoint):
+    def __init__(self, parent, **kwargs):
+        super().__init__(parent, **kwargs)
+
+    @staticmethod
+    def _is_a(parent, data):
+        return parent.types(data['endpointTypeuuid']) == parent.types.Port
+
     def _update_data(self, data: dict):
-        port = data.get('port')
-        if not port:
+        portarr = data.get('portno')
+        if portarr is None:
             raise TPNRefreshInconsistency(
-                'SwitchPort detail does not contain "port" field'
+                'SwitchPort detail does not contain "portno" field'
             )
-        if len(port) != 1:
+        if len(portarr) != 1:
             raise TPNRefreshInconsistency(
-                f'SwitchPort detail contains {len(port)} ports'
+                f'SwitchPort detail contains {len(portarr)} ports'
             )
-        port = port[0]
-        newid: str = port.get('endpointuuid')
+        self.port = portarr[0]
+        newid: str = data.get('endpointuuid')
         if getattr(self, 'id', None) is None:
             self.id = newid
         else:
@@ -86,14 +109,14 @@ class SwitchPort(Endpoint):
                     f'{self.id} to {newid}'
                 )
 
-        dc = self.session.datacenters[self.data.get('datacenteruuid')]
+        dc = self.session.datacentres[self.data.get('datacenteruuid')]
         if dc:
             self.parent = dc
 
         self.vlans = []
 
-        for vlan in port[0].get('vport', []):
-            self.vlans.append(VLAN(self, **vlan))
+#        for vlan in port.get('vport', []):
+#            self.vlans.append(VLAN(self, **vlan))
 
 
 class VPortEncapsulation(TPNModel):
@@ -138,3 +161,7 @@ class VXLAN(VPortEncapsulation):
 
 class QinQ(VPortEncapsulation):
     pass
+
+
+# class VNF(Endpoint):
+#     pass
