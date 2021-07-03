@@ -10,18 +10,9 @@ class Topologies(TPNListModel):
         self.vnf = []
         self._refkeys = ['topologyname', 'topologyuuid']
         self._primary_key = 'uuid'
+        self._url_path = '/ttms/1.0.0/topology_tag'
 
         self.refresh()
-
-    def _get_data(self) -> list:
-        response = self.session.api_session.call_api(
-            path='/ttms/1.0.0/topology_tag'
-        )
-
-        if self.debug:
-            print(f'Topologies.get_data.response: {response}')
-
-        return response
 
     def _update_data(self, data: list):
         self.data = {**self.data, 'list': data}

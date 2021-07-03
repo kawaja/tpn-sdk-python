@@ -31,6 +31,7 @@ class TestP2PLinks(testtools.TestCase):
             accountid=accountid, username=username, password=password)
 
     def test_p2plinks(self):
+        # this test specifically should not call the Contract detail API
         setup_mocks(
             self.api_mock, [('inventory/links/customer',)]
         )
@@ -64,6 +65,7 @@ class TestP2PLinks(testtools.TestCase):
         )
 
         links = self.tpns.p2plinks
+        print(links)
         self.assertIsNotNone(links)
         self.assertEqual(len(links), 0)
         # calls: generatetoken, validatetoken, inventory/links/customer

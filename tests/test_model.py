@@ -11,16 +11,6 @@ class TestModelBasics(unittest.TestCase):
         telstra_pn.__flags__['debug'] = True
         telstra_pn.__flags__['debug_getattr'] = True
 
-    def test_model_missing_get_data(self):
-        class Model(tpn_model.TPNModel):
-            def _update_data(self, data):
-                pass
-
-        m = Model(MagicMock())
-        with self.assertRaisesRegex(NotImplementedError, ''):
-            m._get_data()
-        self.assertFalse(m._check_method_overridden('_get_data'))
-
     def test_model_refresh_with_no_get_data(self):
         class Model(tpn_model.TPNModel):
             def _update_data(self, data):
@@ -95,6 +85,7 @@ class TestModelBasics(unittest.TestCase):
         class Model(tpn_model.TPNModel):
             def __init__(self, parent, **data):
                 super().__init__(session_mock)
+                self._url_path = 'none'
                 self.refresh()
 
             def _get_data(self) -> dict:
@@ -112,14 +103,6 @@ class TestListModelBasics(unittest.TestCase):
     def setUp(self):
         telstra_pn.__flags__['debug'] = True
         telstra_pn.__flags__['debug_getattr'] = True
-
-    def test_list_model_missing_get_data(self):
-        with self.assertRaisesRegex(NotImplementedError, ''):
-            class ListModel(tpn_model.TPNListModel):
-                def _update_data(self, data):
-                    pass
-
-            ListModel(MagicMock())._get_data()
 
     def test_list_model_missing_update_data(self):
         with self.assertRaisesRegex(NotImplementedError, ''):
@@ -192,9 +175,10 @@ class TestListModelBasics(unittest.TestCase):
                 super().__init__(session)
                 self._primary_key = 'key1'
                 self._refkeys = ['key1']
+                self._url_path = 'none'
                 self.refresh()
 
-            def _get_data(self) -> dict:
+            def _get_data(self) -> list:
                 return [{'key1': 'data1', 'key2': 'data2'}]
 
             def _update_data(self, data):
@@ -228,6 +212,7 @@ class TestModelBehaviour(unittest.TestCase):
         class Model(tpn_model.TPNModel):
             def __init__(self, parent, **data):
                 super().__init__(session_mock)
+                self._url_path = 'none'
                 self.refresh()
 
             def _get_data(self) -> dict:
@@ -341,6 +326,7 @@ class TestListModelBehaviour(unittest.TestCase):
                 super().__init__(session_mock)
                 self._primary_key = 'key1'
                 self._refkeys = ['key1', 'key2']
+                self._url_path = 'none'
                 self.refresh()
 
             def _update_data(self, data):

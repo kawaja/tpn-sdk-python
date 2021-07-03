@@ -9,23 +9,15 @@ class Datacentres(TPNListModel):
         self.vnf = []
         self._refkeys = ['datacentercode', 'datacenteruuid']
         self._primary_key = 'datacenteruuid'
+        self._url_path = '/1.0.0/inventory/datacenters'
+        self._get_deref = 'datacenters'
 
         self.refresh()
 
-    def _get_data(self):
-        response = self.session.api_session.call_api(
-            path='/1.0.0/inventory/datacenters'
-        )
-
-        if self.debug:
-            print(f'Datacentres.get_data.response: {response}')
-
-        return response.get('datacenters', [])
-
-    def display(self):
+    def display(self) -> str:
         return f'{len(self.all)} datacentres'
 
-    def _update_data(self, data):
+    def _update_data(self, data) -> None:
         self.data = {**self.data, 'list': data}
 
         for dc in data:
@@ -37,5 +29,5 @@ class Datacentre(TPNModel):
         super().__init__(parent.session)
         self.data = data
 
-    def display(self):
+    def display(self) -> str:
         return self.datacentercode

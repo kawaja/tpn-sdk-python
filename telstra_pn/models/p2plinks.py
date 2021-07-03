@@ -1,7 +1,7 @@
 from datetime import datetime
 from telstra_pn.models.tpn_model import TPNModel, TPNListModel
 from telstra_pn.codes import status, renewal, latency
-from telstra_pn.exceptions import TPNDataError, TPNRefreshInconsistency
+from telstra_pn.exceptions import TPNRefreshInconsistency
 
 # P2PLink is a medium change rate resource
 
@@ -11,31 +11,22 @@ class P2PLinks(TPNListModel):
         super().__init__(session)
         self._refkeys = ['description', 'linkid', 'tag']
         self._primary_key = 'linkid'
+        cust = self.session.customeruuid
+        self._url_path = f'/1.0.0/inventory/links/customer/{cust}'
 
         self.refresh()
 
-    def _get_data(self) -> list:
-        cust = self.session.customeruuid
-        try:
-            response = self.session.api_session.call_api(
-                path=f'/1.0.0/inventory/links/customer/{cust}'
-            )
-        except TPNDataError as exc:
-            # 400 == no links returned
-            if exc.status_code == 400:
-                self.reset()
-                return []
-
-        if self.debug:
-            print(f'P2PLinks.get_data.response: {response}')
-
-        return response
+    def _handle_tpn_data_error(self, exc: Exception) -> list:
+        # 400 == no links returned
+        if exc.status_code == 400:
+            self.reset()
+            return []
 
     def create(self, endpoints: list, latency: latency, duration_hours: int,
                bandwidth_mbps: int, renewal_option: renewal,
                topology: str) -> str:
         # create
-        self._get_data()
+        self.refresh()
 
     def _update_data(self, data: list) -> None:
         self.data = {**self.data, 'list': data}
@@ -49,8 +40,8 @@ class P2PLink(TPNModel):
         super().__init__(parent.session)
         self.data = {**kwargs}
         self.parent = parent
-
         self._update_data(kwargs)
+        self._url_path = f'/1.0.0/inventory/links/{self.id}'
 
     def _update_data(self, data: dict):
         self.id = data.get('linkid')
@@ -66,16 +57,6 @@ class P2PLink(TPNModel):
         #     self.contracts.append(P2PContract(self, **contract))
         if self.debug:
             print(f' . added {len(self.contracts)} contracts')
-
-    def _get_data(self) -> dict:
-        response = self.session.api_session.call_api(
-            path=f'/1.0.0/inventory/links/{self.id}'
-        )
-
-        if self.debug:
-            print(f'P2PLink.get_data.response: {response}')
-
-        return response
 
     def delete(self) -> None:
         response = self.session.api_session.call_api(
@@ -126,6 +107,9 @@ class P2PContract(TPNModel):
     def __init__(self, parent, **kwargs):
         super().__init__(parent.session)
         self.data = {**kwargs}
+        self._url_path = (f'/1.0.0/inventory/links/{parent.id}'
+                          f'/contract/{self.data["contractid"]}')
+        self._update_data(kwargs, linkid=parent.id)
         # these extra fields are actually copied from the parent
         # P2PLink when the contract detail API is called
         self.refresh_if_null = [
@@ -134,23 +118,22 @@ class P2PContract(TPNModel):
             'billing-id'
         ]
 
-        self._update_data(kwargs, linkid=parent.id)
-
     def _update_data(self, data: dict, linkid: str = None) -> None:
         if linkid is None:
             linkid = data.get('linkid')
 
-        newid: str = data.get('contractid')
-        if getattr(self, 'id', None) is None:
-            self.id = newid
+        self.contractid: str = data.get('contractid')
+        if self.__dict__.get('id', None) is None:
+            self.id = self.contractid
         else:
-            if self.id != newid:
+            if self.id != self.contractid:
                 raise TPNRefreshInconsistency(
                     'P2PContract contractid changed from '
-                    f'{self.id} to {newid}'
+                    f'{self.id} to {self.contractid}'
                 )
 
-        if getattr(self, 'linkid', None) is None:
+        # linkid is from parent
+        if self.__dict__.get('linkid', None) is None:
             self.linkid = linkid
         else:
             if self.linkid != linkid:
@@ -167,16 +150,6 @@ class P2PContract(TPNModel):
         self.currency = data.get('currencyID')
         self.renewal = renewal(int(data.get('renewal-option')))
 
-    def _get_data(self):
-        response = self.session.api_session.call_api(
-            path=f'/1.0.0/inventory/links/{self.linkid}/contract/{self.id}'
-        )
-
-        if self.debug:
-            print(f'P2PContract.get_data.response: {response}')
-
-        return response
-
     def delete(self) -> None:
         # delete
-        self._get_data()
+        self.refresh()

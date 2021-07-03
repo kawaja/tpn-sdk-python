@@ -1,7 +1,40 @@
-from typing import Any
+from typing import Any, Union
 import inspect
 from telstra_pn import __flags__
-from telstra_pn.exceptions import TPNLogicalError, TPNLibraryInternalError
+from telstra_pn.exceptions import (TPNDataError, TPNLogicalError,
+                                   TPNLibraryInternalError)
+
+
+class TPNDataHandler:
+    def __init__(self,
+                 owner,
+                 url_path,
+                 get_deref,
+                 tpn_data_error_handler=None):
+        self.tpn_data_error_handler = (tpn_data_error_handler
+                                       or self._handle_tpn_data_error)
+        self.url_path = url_path
+        self.owner = owner
+        self.get_deref = get_deref
+
+    def get_data(self) -> Union[list, dict]:
+        if self.owner.__dict__.get('api_session'):
+            session = self.owner.api_session
+        else:
+            session = self.owner.session.api_session
+        try:
+            response = session.call_api(path=self.url_path)
+        except TPNDataError as exc:
+            response = self.tpn_data_error_handler(exc)
+
+        if self.owner.debug:
+            print(f'{self.owner.__class__.__name__}.'
+                  f'get_data.response: {response}')
+
+        if self.get_deref is None:
+            return response
+        else:
+            return self.owner._deref(response)
 
 
 class TPNModel:
@@ -12,7 +45,8 @@ class TPNModel:
     - include a call to `super().__init__(session)` in `__init__`.
     - include an implementation of `_update_data()` which
       sets appropriate instance attributes based on the
-      data retrieved from `_get_data()`.
+      data retrieved from `_get_data()` (and/oror passed via
+      the initialiser).
 
     Implementations of `TPNModel` may:
     - include an implementation of `display()` which returns
@@ -21,11 +55,17 @@ class TPNModel:
     - specify a list of key names in `refresh_if_null` which,
       if any are missing when accessing any attributes, will trigger
       a data refresh via the appropriate TPN API.
+    - specify a `_url_path` string via which content for this model
+      should be retrieved. If no `_url_path` is provided, a
+      `_get_data()` function may be provided instead.
     - include an implementation of `_get_data()` which calls
       the appropriate TPN API to retrieve data for this
       object. If no `_get_data()` method is provided, the data
       for this model can only be specified at creation time and the
       `refresh()` method will silently do nothing.
+    - include an implementation of `_handle_tpn_data_error(self, exc)`
+      which will be called if a TPNDataError exception is raised
+      while retrieving data from the TPN API via `_get_data()`.
 
     Public methods:
     - `refresh()` manually triggers a refresh of this object's data
@@ -37,24 +77,43 @@ class TPNModel:
     - `TPNLibraryInternalError` when accessing attributes if the
       `__init__()` does not call `super().__init__(session)`.
     '''
-    def __init__(self, session):
+    def __init__(self, session, data_handler=None):
         self._initialised = True
         self.session = session
         self.debug = __flags__.get('debug')
         self.data = {}
         self._is_refreshing = False
+        self._url_path = None
+        self._get_deref = None
+        self.data_handler = data_handler
+
         if self.debug:
             print(f'creating {self.__class__.__name__}')
 
-    def _get_data(self) -> None:
-        raise NotImplementedError
+    def _get_data(self, *args, **kwargs) -> Union[list, dict]:
+        # late binding of data_handler to ensure subclass has had
+        # a chance to populate _url_path, etc.
+        if self.data_handler is None:
+            self.data_handler = TPNDataHandler(self, self._url_path,
+                                               self._get_deref,
+                                               self._handle_tpn_data_error)
+        return self.data_handler.get_data(*args, **kwargs)
+
+    def _deref(self, data) -> dict:
+        return data.get(self._get_deref, {})
+
+    def _handle_tpn_data_error(self, exc):
+        raise(exc)
 
     def _update_data(self, data: dict) -> None:
         raise NotImplementedError
 
-    def _check_method_overridden(self, attr) -> bool:
-        return getattr(self, attr).__code__ is not getattr(TPNModel,
-                                                           attr).__code__
+    # def _check_method_overridden(self, attr) -> bool:
+    #     myattr = self.__dict__.get(attr, None)
+    #     classattr = TPNModel.__dict__.get(attr, None)
+    #     if myattr is not None and classattr is not None:
+    #         return myattr.__code__ is not classattr.__code__
+    #     return False
 
     def __getattr__(self, name: str) -> Any:
         if self.__dict__.get('_initialised') is None:
@@ -103,8 +162,10 @@ class TPNModel:
         return False
 
     def refresh(self) -> None:
-        if self._check_method_overridden('_get_data'):
-            self._update_data(self._get_data())
+        # if self._check_method_overridden('_get_data'):
+        if self._url_path is not None:
+            response = self._get_data()
+            self._update_data(response)
 
     def __repr__(self):
         display = ""
@@ -112,10 +173,13 @@ class TPNModel:
             display = self.parent.__repr__()
         if hasattr(self, 'display'):
             me = self.display()
-            if display:
-                display = f'{display} / {me}'
-            else:
-                display = me
+        else:
+            me = self.__dict__.get('id', self.__class__.__name__)
+        if display:
+            display = f'{display} / {me}'
+        else:
+            display = me
+
         return display
 
 
@@ -128,9 +192,9 @@ class TPNListModel(TPNModel):
     - include an implementation of `_update_data()` which sets
       appropriate instance attributes based on the data retrieved
       from `_get_data()`.
-    - include an implementation of `_get_data()` which calls
-      the appropriate TPN API to retrieve data for this
-      object.
+    - specify a `_url_path` string via which content for this model
+      should be retrieved. If no `_url_path` is provided, a
+      `_get_data()` function may be provided instead.
     - specify a primary key in `_primary_key`. This key must be
       present in the data returned by `_get_data()`.
 
@@ -148,6 +212,14 @@ class TPNListModel(TPNModel):
       return an arbitrary element. Every item in the list must contain
       every key in `_refkeys`. If the API does not always provide this,
       then the additional key should be set in `_update_data()`.
+    - include an implementation of `_get_data()` which calls
+      the appropriate TPN API to retrieve data for this
+      object. If no `_get_data()` method is provided, the data
+      for this model can only be specified at creation time and the
+      `refresh()` method will silently do nothing.
+    - include an implementation of `_handle_tpn_data_error(self, exc)`
+      which will be called if a TPNDataError exception is raised
+      while retrieving data from the TPN API via `_get_data()`.
 
     Public methods:
     - `refresh()` manually triggers a refresh of this object's data
@@ -195,14 +267,15 @@ class TPNListModel(TPNModel):
         - `TPNLibraryInternalError` if the class is missing the required
           `_primary_key` attribute.
         '''
-        if getattr(self, '_primary_key', False):
+        if self.__dict__.get('_primary_key', False):
             key = getattr(item, self._primary_key, False)
             if key is not False:
                 self.all[key] = item
             else:
                 raise TPNLogicalError(
-                    f'attempted to add item {item} to {self.__class__} which '
-                    f'does not contain primary key {self._primary_key}'
+                    f'attempted to add item {item.__dict__} (to '
+                    f'{self.__class__}) which does not contain '
+                    f'primary key {self._primary_key}'
                 )
         else:
             raise TPNLibraryInternalError(
@@ -210,14 +283,16 @@ class TPNListModel(TPNModel):
                 'required attribute "_primary_key"'
             )
 
-    # avoid hitting the TPNModel __getattr__
+    def _deref(self, data) -> list:
+        return data.get(self._get_deref, [])
+
     def __contains__(self, term):
         return self._get_contains(term, 'contains')
 
-    # avoid hitting the TPNModel __getattr__
     def __getitem__(self, term):
         return self._get_contains(term, 'get')
 
+    # use __dict__ to avoid hitting the TPNModel __getattr__
     def _get_contains(self, term, action):
         if '_refkeys' not in self.__dict__:
             if action == 'get':
@@ -281,8 +356,8 @@ class TPNModelSubclassesMixin:
     def __new__(cls, parent, **data):
         potential_subclasses = []
         for subclass in cls.__subclasses__():
-            if getattr(subclass, '_is_a', False):
-                if subclass._is_a(parent, data):
+            if subclass.__dict__.get('_is_a', False):
+                if subclass._is_a(data, parent):
                     potential_subclasses.append(subclass)
             else:
                 raise TPNLibraryInternalError(

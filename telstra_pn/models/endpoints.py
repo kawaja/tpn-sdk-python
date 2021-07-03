@@ -1,8 +1,9 @@
 import enum
 from telstra_pn.models.tpn_model import (TPNModel, TPNListModel,
                                          TPNModelSubclassesMixin)
-from telstra_pn.exceptions import (TPNLogicalError, TPNRefreshInconsistency)
-from telstra_pn.codes import vportstatus
+from telstra_pn.exceptions import (TPNRefreshInconsistency)
+# from telstra_pn.exceptions import (TPNLogicalError, TPNRefreshInconsistency)
+# from telstra_pn.codes import vportstatus
 from telstra_pn import __flags__
 
 # Endpoints is are high change rate resource
@@ -14,6 +15,9 @@ class Endpoints(TPNListModel):
         super().__init__(session)
         self._refkeys = ['endpointuuid', 'name']
         self._primary_key = 'endpointuuid'
+        cust = self.session.customeruuid
+        self._url_path = f'/1.0.0/inventory/endpoints/customeruuid/{cust}'
+        self._get_deref = 'endpointlist'
 
         _endpoint_types = self._populate_endpoint_types()
         self.types = enum.Enum('EndpointType', _endpoint_types)
@@ -29,24 +33,15 @@ class Endpoints(TPNListModel):
             for eptype in response
         }
 
-    def _get_data(self) -> list:
-        cust = self.session.customeruuid
-        response = self.session.api_session.call_api(
-            path=f'/1.0.0/inventory/endpoints/customeruuid/{cust}'
-        )
-
-        if self.debug:
-            print(f'Endpoints.get_data.response: {response}')
-
-        return response.get('endpointlist', [])
-
     def _update_data(self, data: list) -> None:
         self.data = {**self.data, 'list': data}
 
         for port in data:
-            portdata = Endpoint._get_data(self.session, port['endpointuuid'])
-            portdata = {**portdata, **port}
-            self.additem(Endpoint(self, **portdata))
+            # portdata = Endpoint._get_data(self.session, port['endpointuuid'])
+            # portdata = {**portdata, **port}
+            # update_on_create to ensure endpointTypeuuid is present
+            # before subclass search
+            self.additem(Endpoint(self, update_on_create=True, **port))
 
     def display(self):
         return f'{len(self)} endpoints'
@@ -87,7 +82,7 @@ class SwitchPort(Endpoint):
         super().__init__(parent, **kwargs)
 
     @staticmethod
-    def _is_a(parent, data):
+    def _is_a(data, parent) -> bool:
         return parent.types(data['endpointTypeuuid']) == parent.types.Port
 
     def _update_data(self, data: dict):
@@ -125,7 +120,7 @@ class SwitchPort(Endpoint):
         return ''
 
 
-class VPortEncapsulation(TPNModel):
+class VPortEncapsulation(TPNModel, TPNModelSubclassesMixin):
     def __new__(self, parent, **data):
         self.session = parent.session
         self.debug = __flags__.get('debug')
@@ -138,8 +133,8 @@ class VPortEncapsulation(TPNModel):
     def detect_type(self):
         if self.data.get('vporttype') == 'vlan':
             return VLAN(self.data)
-        if self.data.get('vporttype') == 'vxlan':
-            return VXLAN(self.data)
+        # if self.data.get('vporttype') == 'vxlan':
+        #     return VXLAN(self.data)
         if self.data.get('vporttype') == 'qinq':
             return QinQ(self.data)
 
@@ -151,18 +146,21 @@ class VLAN(VPortEncapsulation):
 
         self._update_date(kwargs)
 
-    def _update_data(self, data: dict) -> None:
-        self.vlanid = self.data.get('vportvalue', {}).get('vlan', {}).get('id')
-        self.id = self.data.get('vportuuid')
-        if self.data.get('vporttype') != 'vlan':
-            raise TPNLogicalError(
-                f'unkown vporttype {self.data.get("vporttype")}'
-            )
-        self.status = vportstatus(self.data.get('status'))
+    @staticmethod
+    def _is_a(self, data, parent=None) -> bool:
+        return data.get('vporttype') == 'vlan'
 
+    # self.vlanid = self.data.get('vportvalue', {}).get('vlan', {}).get('id')
+    # self.id = self.data.get('vportuuid')
+    # if self.data.get('vporttype') != 'vlan':
+    #     raise TPNLogicalError(
+    #         f'unkown vporttype {self.data.get("vporttype")}'
+    #     )
+    # self.status = vportstatus(self.data.get('status'))
 
-class VXLAN(VPortEncapsulation):
-    pass
+# VXLAN endpoints are not currently implemented
+# class VXLAN(VPortEncapsulation):
+#     pass
 
 
 class QinQ(VPortEncapsulation):

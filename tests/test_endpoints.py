@@ -71,7 +71,7 @@ class TestEndpoints(testtools.TestCase):
         super(TestEndpoints, self).setUp()
         telstra_pn.__flags__['debug'] = True
         telstra_pn.__flags__['debug_mocks'] = True
-        telstra_pn.__flags__['debug_getattr'] = False
+        telstra_pn.__flags__['debug_getattr'] = True
 
         self.api_mock = self.useFixture(fixture.Fixture())
 
@@ -121,7 +121,7 @@ class TestEndpointsBehaviour(testtools.TestCase):
     def setUp(self):
         super(TestEndpointsBehaviour, self).setUp()
         telstra_pn.__flags__['debug'] = True
-        telstra_pn.__flags__['debug_mocks'] = True
+        telstra_pn.__flags__['debug_mocks'] = False
         telstra_pn.__flags__['debug_getattr'] = False
 
         self.api_mock = self.useFixture(fixture.Fixture())
@@ -176,3 +176,11 @@ class TestEndpointsBehaviour(testtools.TestCase):
         self.assertEqual(
             str(self.eps[tests.mocks_endpoints.MockEndpoint3UUID]),
             'AMLS / ofsw3.pen.amls.99')
+
+    def test_endpoints_list(self):
+        output = ''
+        for ep in self.eps:
+            output = f'{output}\n{ep.__class__.__name__}'
+
+        print(output)
+        self.assertEqual(output, '\nSwitchPort\nSwitchPort\nSwitchPort')
