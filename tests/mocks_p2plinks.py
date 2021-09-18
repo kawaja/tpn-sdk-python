@@ -10,7 +10,7 @@ link1 = {
     "description": "Test link #1",
     "latency": "2",
     "linkid": MockLink1ID,
-    "contracts": {},
+    "contracts": [],
     "tag": "production",
     "interfacetypes": [],
     "connections": [MockEndpoint1UUID, MockEndpoint2UUID],

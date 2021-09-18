@@ -4,19 +4,6 @@ from telstra_pn.exceptions import TPNDataError, TPNInvalidLogin
 from telstra_pn.models.tpn_model import TPNModel
 
 
-def without_getattr(func):
-    def wrapper(*args, **kwargs):
-        print(f'before {func.__name__}')
-        oldgetattr = args[0].__getattr__
-        del args[0].__getattr__
-        ret = func(*args, **kwargs)
-        args[0].__getattr__ = oldgetattr
-        print(f'after {func}')
-        print(f'wrapper: {ret}')
-        return ret
-    return wrapper
-
-
 class Session(TPNModel):
     def __init__(self,
                  accountid: str = None,
@@ -26,6 +13,10 @@ class Session(TPNModel):
         super().__init__(None)
         self.api_session = telstra_pn.rest.ApiSession()
         self.refresh_if_null = ['customeruuid']
+        self._keyname_mappings = [
+            ('useruuid', 'userid'),
+            ('customeruuid', 'customerid')
+        ]
         self._url_path = '/1.0.0/auth/validatetoken'
 
         self._datacentres = None
@@ -33,6 +24,9 @@ class Session(TPNModel):
         self._endpoints = None
         self._topologies = None
 
+        self.login(accountid, username, password, otp)
+
+    def login(self, accountid, username, password, otp):
         if not accountid:
             raise ValueError('Session: accountid is required')
 
@@ -74,19 +68,9 @@ class Session(TPNModel):
     def validate(self) -> None:
         self.refresh()
 
-    # def _get_data(self) -> None:
-    #     response = self.api_session.call_api(
-    #         path='/1.0.0/auth/validatetoken'
-    #     )
-
-    #     return response
-
     def _update_data(self, data: dict) -> None:
-        data['useruuid'] = data['userid']
-        data['customeruuid'] = data['customerid']
-        del data['userid']
-        del data['customerid']
         self.data = {**self.data, **data}
+        self._update_keys(data)
 
     @property
     def datacentres(self) -> telstra_pn.Datacentres:
@@ -96,7 +80,6 @@ class Session(TPNModel):
         return getattr(self, '_datacentres', None)
 
     @property
-    @without_getattr
     def p2plinks(self) -> telstra_pn.P2PLinks:
         if self._p2plinks is None:
             self._p2plinks = telstra_pn.P2PLinks(self)
@@ -105,7 +88,6 @@ class Session(TPNModel):
         return self._p2plinks
 
     @property
-    @without_getattr
     def endpoints(self) -> telstra_pn.Endpoints:
         if getattr(self, '_endpoints', None) is None:
             self._endpoints = telstra_pn.Endpoints(self)

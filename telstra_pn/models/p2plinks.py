@@ -10,7 +10,7 @@ class P2PLinks(TPNListModel):
     def __init__(self, session):
         super().__init__(session)
         self._refkeys = ['description', 'linkid', 'tag']
-        self._primary_key = 'linkid'
+        self._primary_key = 'id'
         cust = self.session.customeruuid
         self._url_path = f'/1.0.0/inventory/links/customer/{cust}'
 
@@ -40,13 +40,16 @@ class P2PLink(TPNModel):
         super().__init__(parent.session)
         self.data = {**kwargs}
         self.parent = parent
+        self._keyname_mappings = [
+            ('id', 'linkid'),
+            ('endpoints', 'connections'),
+        ]
         self._update_data(kwargs)
         self._url_path = f'/1.0.0/inventory/links/{self.id}'
 
     def _update_data(self, data: dict):
-        self.id = data.get('linkid')
+        self._update_keys(data)
         self.latency = latency(int(data.get('latency')))
-        self.endpoints = data.get('connections')
         self.status = status(int(data.get('linkStatus')))
         if self.debug:
             print(f'contracts: {data.get("contracts", [])}')
@@ -90,7 +93,9 @@ class P2PContracts(TPNListModel):
         self._refkeys = ['contractid', 'seqno']
         self._primary_key = 'contractid'
 
-        self._update_data(contracts)
+        self.data = {'list': contracts}
+
+        self.refresh()
 
     def display(self) -> None:
         return(f'{len(self)} contract(s)')
@@ -99,7 +104,7 @@ class P2PContracts(TPNListModel):
         self.data = {**self.data, 'list': data}
         self.reset()
 
-        for contract in data:
+        for contract in data['list']:
             self.additem(P2PContract(self.parent, **contract))
 
 
@@ -110,6 +115,11 @@ class P2PContract(TPNModel):
         self._url_path = (f'/1.0.0/inventory/links/{parent.id}'
                           f'/contract/{self.data["contractid"]}')
         self._update_data(kwargs, linkid=parent.id)
+        self._keyname_mappings = [
+            ('duration_hours', 'duration'),
+            ('hourly_price', 'price'),
+            ('currency', 'currencyID'),
+        ]
         # these extra fields are actually copied from the parent
         # P2PLink when the contract detail API is called
         self.refresh_if_null = [
@@ -142,12 +152,13 @@ class P2PContract(TPNModel):
                     f'{self.linkid} to {linkid}'
                 )
 
+        self._update_keys(data)
         self.seqno = self.id[self.id.find('.')+1:]
-        self.duration_hours = data.get('duration')  # convert?
-        self.hourly_price = data.get('price')
+        # self.duration_hours = data.get('duration')  # convert?
+        # self.hourly_price = data.get('price')
         self.status = status(data.get('contractStatus'))
-        self.version = data.get('version')
-        self.currency = data.get('currencyID')
+        # self.version = data.get('version')
+        # self.currency = data.get('currencyID')
         self.renewal = renewal(int(data.get('renewal-option')))
 
     def delete(self) -> None:

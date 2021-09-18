@@ -11,24 +11,26 @@ class TestModelBasics(unittest.TestCase):
         telstra_pn.__flags__['debug'] = True
         telstra_pn.__flags__['debug_getattr'] = True
 
-    def test_model_refresh_with_no_get_data(self):
-        class Model(tpn_model.TPNModel):
-            def _update_data(self, data):
-                pass
+    # No longer a fatal error to omit _get_data()
+    # def test_model_refresh_with_no_get_data(self):
+    #     class Model(tpn_model.TPNModel):
+    #         def _update_data(self, data):
+    #             pass
 
-        m = Model(MagicMock())
-        m.refresh()
-        self.assertFalse(m._check_method_overridden('_get_data'))
+    #     m = Model(MagicMock())
+    #     m.refresh()
+    #     self.assertFalse(m._check_method_overridden('_get_data'))
 
-    def test_model_missing_update_data(self):
-        class Model(tpn_model.TPNModel):
-            def _get_data(self):
-                pass
+    # No longer a fatal error to omit _update_data()
+    # def test_model_missing_update_data(self):
+    #     class Model(tpn_model.TPNModel):
+    #         def _get_data(self):
+    #             pass
 
-        m = Model(MagicMock())
-        with self.assertRaisesRegex(NotImplementedError, ''):
-            m._update_data(MagicMock())
-        self.assertTrue(m._check_method_overridden('_get_data'))
+    #     m = Model(MagicMock())
+    #     with self.assertRaisesRegex(NotImplementedError, ''):
+    #         m._update_data(MagicMock())
+    #     self.assertTrue(m._check_method_overridden('_get_data'))
 
     def test_model_create(self):
         class Model(tpn_model.TPNModel):
@@ -43,7 +45,6 @@ class TestModelBasics(unittest.TestCase):
         self.assertEqual(m.session, session_mock)
         self.assertEqual(m.data, {})
         self.assertEqual(m._is_refreshing, False)
-        self.assertTrue(m._check_method_overridden('_get_data'))
 
     def test_model_create_with_missing_super(self):
         class Model(tpn_model.TPNModel):
@@ -104,13 +105,14 @@ class TestListModelBasics(unittest.TestCase):
         telstra_pn.__flags__['debug'] = True
         telstra_pn.__flags__['debug_getattr'] = True
 
-    def test_list_model_missing_update_data(self):
-        with self.assertRaisesRegex(NotImplementedError, ''):
-            class ListModel(tpn_model.TPNListModel):
-                def _get_data(self):
-                    pass
+    # No longer a fatal error to omit _update_data()
+    # def test_list_model_missing_update_data(self):
+    #     with self.assertRaisesRegex(NotImplementedError, ''):
+    #         class ListModel(tpn_model.TPNListModel):
+    #             def _get_data(self):
+    #                 pass
 
-            ListModel(MagicMock())._update_data(MagicMock())
+    #         ListModel(MagicMock())._update_data(MagicMock())
 
     def test_list_model_missing_primary_key(self):
         class ListModel(tpn_model.TPNListModel):
@@ -215,11 +217,12 @@ class TestModelBehaviour(unittest.TestCase):
                 self._url_path = 'none'
                 self.refresh()
 
+            def _update_data(self, data: dict):
+                self.data = data
+                self._update_keys(data)
+
             def _get_data(self) -> dict:
                 return {**TestModelBehaviour.getdata_mock()}
-
-            def _update_data(self, data):
-                self.data = data
 
             def display(self):
                 return 'child'
@@ -493,12 +496,12 @@ class TestModelSubclassMixin(unittest.TestCase):
 
         class Subclass1(Model):
             @staticmethod
-            def _is_a(parent, data):
+            def _is_a(data, parent):
                 return data['type'] == 'subclass1'
 
         class Subclass2(Model):
             @staticmethod
-            def _is_a(parent, data):
+            def _is_a(data, parent):
                 return data['type'] == 'subclass2'
 
         session_mock = MagicMock()
@@ -520,7 +523,7 @@ class TestModelSubclassMixin(unittest.TestCase):
 
         class Subclass1(Model):
             @staticmethod
-            def _is_a(parent, data):
+            def _is_a(data, parent):
                 return data['type'] == 'subclass1'
 
         class Subclass2(Model):
@@ -545,12 +548,12 @@ class TestModelSubclassMixin(unittest.TestCase):
 
         class Subclass1(Model):
             @staticmethod
-            def _is_a(parent, data):
+            def _is_a(data, parent):
                 return data['type'] == parent.look_for_class
 
         class Subclass2(Model):
             @staticmethod
-            def _is_a(parent, data):
+            def _is_a(data, parent):
                 return data['type'] == parent.look_for_class
 
         session_mock = MagicMock(look_for_class='subclass1')
@@ -572,12 +575,12 @@ class TestModelSubclassMixin(unittest.TestCase):
 
         class Subclass1(Model):
             @staticmethod
-            def _is_a(parent, data):
+            def _is_a(data, parent):
                 return data['type'] == parent.look_for_class
 
         class Subclass2(Model):
             @staticmethod
-            def _is_a(parent, data):
+            def _is_a(data, parent):
                 return data['type'] == parent.look_for_class
 
         session_mock = MagicMock(look_for_class='subclass1')

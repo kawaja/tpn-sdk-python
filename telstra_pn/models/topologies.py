@@ -9,13 +9,14 @@ class Topologies(TPNListModel):
         super().__init__(session)
         self.vnf = []
         self._refkeys = ['topologyname', 'topologyuuid']
-        self._primary_key = 'uuid'
+        self._primary_key = 'topologyuuid'
         self._url_path = '/ttms/1.0.0/topology_tag'
 
         self.refresh()
 
     def _update_data(self, data: list):
         self.data = {**self.data, 'list': data}
+        self._update_keys(data)
 
         for topo in data:
             self.additem(Topology(self, **topo))
@@ -28,13 +29,16 @@ class Topology(TPNModel):
     def __init__(self, parent, **data):
         super().__init__(parent.session)
         self.data = data
+        self._keyname_mappings = [
+            ('topologyname', 'name'),
+            ('topologyuuid', 'uuid'),
+            ('id', 'uuid'),
+        ]
 
         self._update_data(data)
 
     def _update_data(self, data):
-        self.id = data.get('uuid')
-        self.topologyname = data.get('name')
-        self.topologyuuid = data.get('uuid')
+        self._update_keys(data)
         self.status = topologystatus(str(data.get('status')))
 
     def display(self):

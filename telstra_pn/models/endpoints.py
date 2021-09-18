@@ -37,11 +37,7 @@ class Endpoints(TPNListModel):
         self.data = {**self.data, 'list': data}
 
         for port in data:
-            # portdata = Endpoint._get_data(self.session, port['endpointuuid'])
-            # portdata = {**portdata, **port}
-            # update_on_create to ensure endpointTypeuuid is present
-            # before subclass search
-            self.additem(Endpoint(self, update_on_create=True, **port))
+            self.additem(Endpoint(self, **port))
 
     def display(self):
         return f'{len(self)} endpoints'
@@ -51,42 +47,36 @@ class Endpoint(TPNModel, TPNModelSubclassesMixin):
     def __init__(self, parent, **data):
         super().__init__(parent.session)
 
-        self.data = data
+        self.data = {**self.data, **data}
         self.id = data['endpointuuid']
         self.parent = parent
         self.refresh_if_null = [
-            'creationdate', 'customeruuid', 'datacentercode', 'enabled',
+            'creationdate', 'datacentercode', 'enabled',
             'lastmodifieddate', 'status', 'name'
         ]
-        self._update_data(data)
+        self._keyname_mappings = [
+            ('id', 'endpointuuid')
+        ]
+        self._url_path = self.get_url_path(data)
 
     @staticmethod
-    def _get_data(session, id) -> dict:
-        response = session.api_session.call_api(
-            path=f'/eis/1.0.0/endpoint/endpointuuid/{id}'
-        )
-
-        if __flags__['debug']:
-            print(f'Endpoint.get_data.response: {response}')
-
-        return response
-
-    def display(self) -> str:
-        if self.name:
-            return self.name
-        return ''
+    def get_url_path(data: dict) -> str:
+        return f'/eis/1.0.0/endpoint/endpointuuid/{data["endpointuuid"]}'
 
 
 class SwitchPort(Endpoint):
     def __init__(self, parent, **kwargs):
         super().__init__(parent, **kwargs)
 
+        self._update_data(kwargs)
+
     @staticmethod
     def _is_a(data, parent) -> bool:
         return parent.types(data['endpointTypeuuid']) == parent.types.Port
 
     def _update_data(self, data: dict):
-        portarr = data.get('portno')
+        self.data = {**self.data, **data}
+        portarr = self.data.get('portno')
         if portarr is None:
             raise TPNRefreshInconsistency(
                 'SwitchPort detail does not contain "portno" field'
@@ -96,7 +86,7 @@ class SwitchPort(Endpoint):
                 f'SwitchPort detail contains {len(portarr)} ports'
             )
         self.port = portarr[0]
-        newid: str = data.get('endpointuuid')
+        newid: str = self.data.get('endpointuuid')
         if self.id != newid:
             raise TPNRefreshInconsistency(
                 'SwitchPort endpointuuid changed from '

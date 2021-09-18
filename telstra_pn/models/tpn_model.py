@@ -9,10 +9,10 @@ class TPNDataHandler:
     def __init__(self,
                  owner,
                  url_path,
-                 get_deref,
+                 get_deref=None,
                  tpn_data_error_handler=None):
         self.tpn_data_error_handler = (tpn_data_error_handler
-                                       or self._handle_tpn_data_error)
+                                       or owner._handle_tpn_data_error)
         self.url_path = url_path
         self.owner = owner
         self.get_deref = get_deref
@@ -43,18 +43,25 @@ class TPNModel:
 
     Implementations of `TPNModel` must:
     - include a call to `super().__init__(session)` in `__init__`.
-    - include an implementation of `_update_data()` which
-      sets appropriate instance attributes based on the
-      data retrieved from `_get_data()` (and/oror passed via
-      the initialiser).
 
     Implementations of `TPNModel` may:
     - include an implementation of `display()` which returns
       a string with a human-readable representation of the
       object.
+    - include an implementation of `_update_data()` which
+      sets appropriate instance attributes based on the
+      data retrieved from `_get_data()` (and/or passed via
+      the initialiser).
     - specify a list of key names in `refresh_if_null` which,
       if any are missing when accessing any attributes, will trigger
       a data refresh via the appropriate TPN API.
+    - specify a list of (alias, apiname) tuples in `_keyname_mappings`
+      which will be copied as primary attributes when using the built-in
+      `_update_data()` function, or if the class provides its own
+      `_update_data()`, when it uses the `_update_keys()` function in
+      its implementation. Note: if a key alias is specified in the
+      `_keyname_mappings` list and the `refresh_if_null`
+      list, then it will no longer trigger a refresh if it's null .
     - specify a `_url_path` string via which content for this model
       should be retrieved. If no `_url_path` is provided, a
       `_get_data()` function may be provided instead.
@@ -77,15 +84,17 @@ class TPNModel:
     - `TPNLibraryInternalError` when accessing attributes if the
       `__init__()` does not call `super().__init__(session)`.
     '''
-    def __init__(self, session, data_handler=None):
+
+    data_handler = None
+    data = {}
+    _is_refreshing = False
+    _url_path = None
+    _get_deref = None
+
+    def __init__(self, session):
         self._initialised = True
         self.session = session
         self.debug = __flags__.get('debug')
-        self.data = {}
-        self._is_refreshing = False
-        self._url_path = None
-        self._get_deref = None
-        self.data_handler = data_handler
 
         if self.debug:
             print(f'creating {self.__class__.__name__}')
@@ -106,7 +115,18 @@ class TPNModel:
         raise(exc)
 
     def _update_data(self, data: dict) -> None:
-        raise NotImplementedError
+        self._update_keys(data)
+
+    def _update_keys(self, data) -> None:
+        for key in getattr(self, '_keyname_mappings', []):
+            if isinstance(key, tuple):
+                (tkey, fkey) = key
+            else:
+                raise TPNLibraryInternalError(
+                    f'{self.__class__} _keyname_mappings '
+                    'should only contain tuples'
+                )
+            self.__dict__[tkey] = data.get(fkey)
 
     # def _check_method_overridden(self, attr) -> bool:
     #     myattr = self.__dict__.get(attr, None)
@@ -116,6 +136,10 @@ class TPNModel:
     #     return False
 
     def __getattr__(self, name: str) -> Any:
+        if name[0] == '_':
+            raise AttributeError(
+                f'{self.__class__.__name__} has no such attribute "{name}"')
+
         if self.__dict__.get('_initialised') is None:
             raise TPNLibraryInternalError(
                 f'{self.__class__} does not call "super().__init__(session)" '
@@ -123,38 +147,32 @@ class TPNModel:
             )
         if __flags__.get('debug_getattr'):
             pframe = inspect.currentframe().f_back
-            print(f'__getattr__ {self.__class__}: {name} '
+            print(f'__getattr__ {self.__class__.__name__}: {name} '
                   f'{pframe.f_code.co_filename}:{pframe.f_lineno} '
                   f'{pframe.f_code.co_name}')
 
         if self._is_refreshing is False:
             if self._needs_refresh():
-                self._is_refreshing = True
                 self.refresh()
-                self._is_refreshing = False
                 if self._needs_refresh():
                     raise TPNLogicalError(
                         'refresh did not retrieve all required attributes')
 
-        d = self.__dict__.get('data', [])
-        if __flags__.get('debug_getattr'):
-            print(f'd={d}')
+        if name in self.__dict__:
+            return self.__dict__[name]
 
+        d = self.__dict__.get('data', [])
         if name in d:
-            if __flags__.get('debug_getattr'):
-                print(f'{name}={d[name]}')
             return d[name]
 
-        if __flags__.get('debug_getattr'):
-            print(f'{name} not found')
-
         raise AttributeError(
-            f'{object.__repr__(self)} has no such attribute "{name}"')
+            f'{self.__class__.__name__} has no such attribute "{name}"')
 
     def _needs_refresh(self) -> bool:
         if 'refresh_if_null' in self.__dict__:
             for key in self.__dict__['refresh_if_null']:
-                if key not in self.__dict__.get('data', {}):
+                if (key not in self.__dict__
+                        and key not in self.__dict__.get('data', [])):
                     if __flags__.get('debug'):
                         print(f'{self.__class__.__name__} requires refresh '
                               f'due to missing {key}')
@@ -162,10 +180,16 @@ class TPNModel:
         return False
 
     def refresh(self) -> None:
-        # if self._check_method_overridden('_get_data'):
+        '''
+        `refresh()` - force a refresh of the data via appropriate API endpoint
+        '''
         if self._url_path is not None:
+            self._is_refreshing = True
             response = self._get_data()
             self._update_data(response)
+            self._is_refreshing = False
+        else:
+            self._update_data(self.data)
 
     def __repr__(self):
         display = ""
@@ -354,6 +378,22 @@ class TPNModelSubclassesMixin:
       implmented.
     '''
     def __new__(cls, parent, **data):
+        # pre-create the data handler because we may need
+        # attributes from the API to determine which subclass
+        # should handle this object
+        if (cls.__dict__.get('get_url_path') and callable(cls.get_url_path)):
+            data_handler = TPNDataHandler(parent, cls.get_url_path(data))
+            response = data_handler.get_data()
+        else:
+            data_handler = TPNDataHandler(parent, parent._url_path)
+            response = {}
+
+        # new data from more specific API endpoint should override
+        # data retrieved by parent
+        data = {**data, **response}
+
+        # check each subclass to see if one (and only one) claims
+        # to be the correct handler for this particular instance
         potential_subclasses = []
         for subclass in cls.__subclasses__():
             if subclass.__dict__.get('_is_a', False):
@@ -368,6 +408,18 @@ class TPNModelSubclassesMixin:
             raise TPNLibraryInternalError(
                 f'Could not determine unique {cls} type '
                 f'(found {len(potential_subclasses)} potentials)')
-        # using object.__new__ is important to avoid creating an
-        # infinite recursion on __new__
-        return object.__new__(potential_subclasses[0])
+
+        # Create the instance of the (single) appropriate subclass.
+        # Using object.__new__ (the original implementation of __new__
+        # is important to avoid creating an infinite recursion on __new__
+        newobj = object.__new__(potential_subclasses[0])
+
+        # provide the existing data_handler, assuming the subclass will use
+        # the main class's API endpoint. Subclass can choose to replace the
+        # data_handler if it has a more specific API endpoint to call
+        data_handler.owner = newobj
+        newobj.data_handler = data_handler
+        newobj.data = data
+#        cls.__init__(newobj, parent, data_handler=data_handler, **data)
+
+        return newobj

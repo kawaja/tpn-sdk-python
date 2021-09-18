@@ -10,6 +10,7 @@ import telstra_pn.exceptions
 import telstra_pn.models.endpoints
 import tests.mocks
 import tests.mocks_endpoints
+import tests.mocks_auth
 from tests.mocks import setup_mocks, mock_history
 
 username = tests.mocks.MockAuthUsername
@@ -59,10 +60,13 @@ class TestEndpointSubtypes(unittest.TestCase):
             Port = '32eea883-16cf-11e8-902e-000c293805b1'
             NotPort = '48ad9af9-decb-40a2-8c69-db5b36f321bd'
 
-        session = MagicMock(types=EndpointTypes)
+        session = MagicMock()
         session.api_session.call_api.return_value = (
             tests.mocks_endpoints.endpoint1_switchport)
-        ep = endpoints.Endpoint(session, **tests.mocks.endpoint1_switchport)
+        session.customeruuid = tests.mocks_auth.MockAuthCustomerUUID
+        eps = MagicMock(types=EndpointTypes)
+        eps.session = session
+        ep = endpoints.Endpoint(eps, **tests.mocks.endpoint1_switchport)
         self.assertTrue(isinstance(ep, endpoints.SwitchPort), type(ep))
 
 

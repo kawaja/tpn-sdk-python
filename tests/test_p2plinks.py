@@ -52,7 +52,7 @@ class TestP2PLinks(testtools.TestCase):
         self.assertEqual(self.api_mock.call_count, 3,
                          mock_history(self.api_mock))
         for link in links:
-            self.assertEqual(link.linkStatus, 1)
+            self.assertEqual(link.status, status(1))
 
         links.refresh()
         # calls: +inventory/links/customer

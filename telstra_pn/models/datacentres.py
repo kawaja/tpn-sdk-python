@@ -11,7 +11,6 @@ class Datacentres(TPNListModel):
         self._primary_key = 'datacenteruuid'
         self._url_path = '/1.0.0/inventory/datacenters'
         self._get_deref = 'datacenters'
-
         self.refresh()
 
     def display(self) -> str:
@@ -28,6 +27,7 @@ class Datacentre(TPNModel):
     def __init__(self, parent, **data):
         super().__init__(parent.session)
         self.data = data
+        self.refresh()
 
     def display(self) -> str:
         return self.datacentercode

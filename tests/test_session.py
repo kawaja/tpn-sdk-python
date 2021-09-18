@@ -53,6 +53,7 @@ class TestSession(testtools.TestCase):
     def setUp(self):
         super(TestSession, self).setUp()
         telstra_pn.__flags__['debug'] = True
+        telstra_pn.__flags__['debug_getattr'] = True
 
         self.api_mock = self.useFixture(fixture.Fixture())
 
@@ -71,10 +72,11 @@ class TestSession(testtools.TestCase):
         self.assertEqual(self.tpns.sessionkey, tests.mocks.MockAuthSessionKey)
         # calls: generatetoken
         self.assertEqual(self.api_mock.call_count, 1)
-        self.assertEqual(self.tpns.token_type, 'bearer')
-        self.assertTrue(self.tpns.expires_in)
-        self.assertTrue(self.tpns.refresh_token)
+        self.assertEqual(self.tpns.data['token_type'], 'bearer')
+        self.assertTrue(self.tpns.data['expires_in'])
+        self.assertTrue(self.tpns.data['refresh_token'])
         # calls: +validatetoken
+        self.assertTrue(self.tpns.useruuid, tests.mocks.MockAuthUserUUID)
         self.assertEqual(self.api_mock.call_count, 2)
 
     def test_validate(self):
