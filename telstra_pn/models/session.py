@@ -6,6 +6,7 @@ from telstra_pn.models.tpn_model import TPNModel
 
 class Session(TPNModel):
     def __init__(self,
+                 token: str = None,
                  accountid: str = None,
                  username: str = None,
                  password: str = None,
@@ -17,6 +18,7 @@ class Session(TPNModel):
             ('useruuid', 'userid'),
             ('customeruuid', 'customerid')
         ]
+        self.data = {}
         self._url_path = '/1.0.0/auth/validatetoken'
 
         self._datacentres = None
@@ -24,7 +26,12 @@ class Session(TPNModel):
         self._endpoints = None
         self._topologies = None
 
-        self.login(accountid, username, password, otp)
+        if token:
+            self.sessionkey = token
+        else:
+            self.login(accountid, username, password, otp)
+
+        self.api_session.set_auth(f'Bearer {self.sessionkey}')
 
     def login(self, accountid, username, password, otp):
         if not accountid:
@@ -62,7 +69,6 @@ class Session(TPNModel):
             print(f'Session.__init__.response: {response}')
 
         self.sessionkey = response.get('access_token')
-        self.api_session.set_auth(f'Bearer {self.sessionkey}')
         self.data = {**self.data, **response}
 
     def validate(self) -> None:
