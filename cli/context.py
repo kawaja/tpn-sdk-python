@@ -11,7 +11,7 @@ class CLIContext(context.Context):
         super().__init__()
 
     def on_connected(self, *args, **kwargs):
-        if self.verbose:
+        if self.debug:
             telstra_pn.__flags__['debug'] = True
             telstra_pn.__flags__['debug_getattr'] = True
         self.tpns = telstra_pn.Session(token=os.environ['TPNTOKEN'])
@@ -34,6 +34,7 @@ class CLIContext(context.Context):
         self.output = args.output
         self.headers = args.headers
         self.verbose = args.verbose
+        self.debug = args.debug
 
     @property
     def headers(self):
