@@ -128,6 +128,9 @@ class TPNModel:
                 )
             self.__dict__[tkey] = data.get(fkey)
 
+    def __getitem__(self, name: str) -> Any:
+        return getattr(self, name)
+
     # def _check_method_overridden(self, attr) -> bool:
     #     myattr = self.__dict__.get(attr, None)
     #     classattr = TPNModel.__dict__.get(attr, None)
@@ -156,7 +159,8 @@ class TPNModel:
                 self.refresh()
                 if self._needs_refresh():
                     raise TPNLogicalError(
-                        'refresh did not retrieve all required attributes')
+                        f'refresh for {self.__class__.__name__} '
+                        'did not retrieve all required attributes')
 
         if name in self.__dict__:
             return self.__dict__[name]
@@ -405,8 +409,10 @@ class TPNModelSubclassesMixin:
                     '"_is_a()" static method'
                 )
         if len(potential_subclasses) != 1:
+            if __flags__.get('debug'):
+                print(f'{cls.__class__.__name__}')
             raise TPNLibraryInternalError(
-                f'Could not determine unique {cls} type '
+                f'Could not determine unique {cls.__class__.__name__} type '
                 f'(found {len(potential_subclasses)} potentials)')
 
         # Create the instance of the (single) appropriate subclass.
