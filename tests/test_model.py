@@ -557,10 +557,8 @@ class TestModelSubclassMixin(unittest.TestCase):
                 return data['type'] == parent.look_for_class
 
         session_mock = MagicMock(look_for_class='subclass1')
-        with self.assertRaisesRegex(
-                telstra_pn.exceptions.TPNLibraryInternalError,
-                'Could not determine unique .* type .found 0 potentials.'):
-            Model(session_mock, type='subclass2')
+        m1 = Model(session_mock, type='subclass2')
+        self.assertIsInstance(m1, Model, type(m1))
 
     def test_mixin_two_matching_subclasses(self):
         class Model(tpn_model.TPNModel, tpn_model.TPNModelSubclassesMixin):
