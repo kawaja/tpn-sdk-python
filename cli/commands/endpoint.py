@@ -9,7 +9,6 @@ class Endpoints(CLI):
 
     def __init__(self):
         self.ctx = context.get_context()
-        cprint(f'tpns: {self.ctx.tpns}')
         self.obj = self.ctx.tpns.endpoints
         self.names = [
             ('Name', 'name'),

@@ -67,17 +67,3 @@ class CLIPlugin(PluginInterface):
             'by sending the logging output to stderr',
         )
         return opts_parser
-
-
-# @click.group()
-# @click.option('--debug', is_flag=True)
-# @click.option('--headers/--no-headers', default=False)
-# @click.option('-o',
-#               '--output',
-#               default='text',
-#               type=click.Choice(['text', 'json'], case_sensitive=False))
-# def cli(ctx, output, headers, debug):
-#     global tpns
-#     ctx.ensure_object(dict)
-#     ctx.obj['output'] = output
-#     ctx.obj['headers'] = headers

@@ -9,7 +9,6 @@ class Datacenters(CLI):
 
     def __init__(self):
         self.ctx = context.get_context()
-        cprint(f'tpns: {self.ctx.tpns}')
         self.obj = self.ctx.tpns.datacentres
         self.names = [
             ('Code', 'datacentercode'),
