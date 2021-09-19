@@ -58,6 +58,7 @@ class Endpoint(TPNModel, TPNModelSubclassesMixin):
             ('id', 'endpointuuid')
         ]
         self._url_path = self.get_url_path(data)
+        self.type = self.__class__.__name__
 
     @staticmethod
     def get_url_path(data: dict) -> str:
@@ -97,8 +98,10 @@ class SwitchPort(Endpoint):
         if dc:
             self.parent = dc
 
-        self.vlans = []
+        self.vports = []
 
+#        for vport in data:
+#            self.additem(Endpoint(self, **port))
 #        for vlan in port.get('vport', []):
 #            self.vlans.append(VLAN(self, **vlan))
 
@@ -107,7 +110,31 @@ class SwitchPort(Endpoint):
             return self.name
         if self.switchname and self.portno:
             return f'{self.switchname}.{self.portno[0]}'
-        return ''
+        return 'SwitchPort'
+
+
+class VNF(Endpoint):
+    def __init__(self, parent, **kwargs):
+        super().__init__(parent, **kwargs)
+
+        self.refresh_if_null = [
+            'creationdate', 'enabled',
+            'lastmodifieddate', 'status', 'name'
+        ]
+        self._update_data(kwargs)
+
+    @staticmethod
+    def _is_a(data, parent) -> bool:
+        return parent.types(data['endpointTypeuuid']) == parent.types.VNF
+
+    def _update_data(self, data: dict) -> None:
+        self.data = {**self.data, **data}
+        self._update_keys(self.data)
+
+    def display(self) -> str:
+        if self.name:
+            return f'VNF ({self.name})'
+        return 'VNF'
 
 
 class VPortEncapsulation(TPNModel, TPNModelSubclassesMixin):
