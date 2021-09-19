@@ -55,9 +55,8 @@ class CLI:
         print(widths)
         for item in data:
             for (name, key) in self.names:
-                print(item[key])
-                if widths[key] < len(item[key]):
-                    widths[key] = len(item[key])
+                if widths[key] < len(str(item[key])):
+                    widths[key] = len(str(item[key]))
 
         if self.ctx.headers:
             output = ''
@@ -73,7 +72,7 @@ class CLI:
         for item in data:
             output = ''
             for (name, key) in self.names:
-                output += '{item:<{width}} '.format(item=item[key],
+                output += '{item:<{width}} '.format(item=str(item[key]),
                                                     width=widths[key])
             cprint(output)
 
@@ -82,7 +81,7 @@ class CLI:
         for item in data:
             outitem = {}
             for (name, key) in self.names:
-                outitem[name] = item[key]
+                outitem[name] = str(item[key])
             outdata.append(outitem)
 
         cprint(json.dumps(outdata))
