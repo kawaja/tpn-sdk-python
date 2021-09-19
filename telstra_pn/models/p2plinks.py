@@ -40,10 +40,10 @@ class P2PLink(TPNModel):
         super().__init__(parent.session)
         self.data = {**kwargs}
         self.parent = parent
-        self._keyname_mappings = [
-            ('id', 'linkid'),
-            ('endpoints', 'connections'),
-        ]
+        self._keyname_mappings = {
+            'id': 'linkid',
+            'endpoints': 'connections'
+        }
         self._update_data(kwargs)
         self._url_path = f'/1.0.0/inventory/links/{self.id}'
 
@@ -115,11 +115,11 @@ class P2PContract(TPNModel):
         self._url_path = (f'/1.0.0/inventory/links/{parent.id}'
                           f'/contract/{self.data["contractid"]}')
         self._update_data(kwargs, linkid=parent.id)
-        self._keyname_mappings = [
-            ('duration_hours', 'duration'),
-            ('hourly_price', 'price'),
-            ('currency', 'currencyID'),
-        ]
+        self._keyname_mappings = {
+            'duration_hours': 'duration',
+            'hourly_price': 'price',
+            'currency': 'currencyID'
+        }
         # these extra fields are actually copied from the parent
         # P2PLink when the contract detail API is called
         self.refresh_if_null = [

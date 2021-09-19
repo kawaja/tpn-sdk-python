@@ -58,6 +58,7 @@ class TestEndpointSubtypes(unittest.TestCase):
     def test_endpoint_switchport(self):
         class EndpointTypes(enum.Enum):
             Port = '32eea883-16cf-11e8-902e-000c293805b1'
+            VNF = '4c240647-16cf-11e8-902e-000c293805b1'
             NotPort = '48ad9af9-decb-40a2-8c69-db5b36f321bd'
 
         session = MagicMock()

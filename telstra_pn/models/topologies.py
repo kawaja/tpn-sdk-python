@@ -29,11 +29,11 @@ class Topology(TPNModel):
     def __init__(self, parent, **data):
         super().__init__(parent.session)
         self.data = data
-        self._keyname_mappings = [
-            ('topologyname', 'name'),
-            ('topologyuuid', 'uuid'),
-            ('id', 'uuid'),
-        ]
+        self._keyname_mappings = {
+            'topologyname': 'name',
+            'topologyuuid': 'uuid',
+            'id': 'uuid'
+        }
 
         self._update_data(data)
 

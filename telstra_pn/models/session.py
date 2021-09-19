@@ -14,10 +14,10 @@ class Session(TPNModel):
         super().__init__(None)
         self.api_session = telstra_pn.rest.ApiSession()
         self.refresh_if_null = ['customeruuid']
-        self._keyname_mappings = [
-            ('useruuid', 'userid'),
-            ('customeruuid', 'customerid')
-        ]
+        self._keyname_mappings = {
+            'useruuid': 'userid',
+            'customeruuid': 'customerid'
+        }
         self.data = {}
         self._url_path = '/1.0.0/auth/validatetoken'
 

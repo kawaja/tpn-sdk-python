@@ -51,12 +51,14 @@ class Endpoint(TPNModel, TPNModelSubclassesMixin):
         self.id = data['endpointuuid']
         self.parent = parent
         self.refresh_if_null = [
-            'creationdate', 'datacentercode', 'enabled',
-            'lastmodifieddate', 'status', 'name'
+            'creationdate', 'enabled', 'lastmodifieddate', 'status'
         ]
-        self._keyname_mappings = [
-            ('id', 'endpointuuid')
-        ]
+        self._keyname_mappings = {
+            'id': 'endpointuuid'
+        }
+        self._defaults = {
+            'name': '-'
+        }
         self._url_path = self.get_url_path(data)
         self.type = self.__class__.__name__
 

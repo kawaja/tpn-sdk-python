@@ -118,15 +118,8 @@ class TPNModel:
         self._update_keys(data)
 
     def _update_keys(self, data) -> None:
-        for key in getattr(self, '_keyname_mappings', []):
-            if isinstance(key, tuple):
-                (tkey, fkey) = key
-            else:
-                raise TPNLibraryInternalError(
-                    f'{self.__class__} _keyname_mappings '
-                    'should only contain tuples'
-                )
-            self.__dict__[tkey] = data.get(fkey)
+        for (key, value) in self.__dict__.get('_keyname_mappings', {}).items():
+            self.__dict__[key] = data.get(value)
 
     def __getitem__(self, name: str) -> Any:
         return getattr(self, name)
@@ -166,6 +159,10 @@ class TPNModel:
             return self.__dict__[name]
 
         d = self.__dict__.get('data', [])
+        if name in d:
+            return d[name]
+
+        d = self.__dict__.get('_defaults', {})
         if name in d:
             return d[name]
 
@@ -408,6 +405,9 @@ class TPNModelSubclassesMixin:
                     f'{subclass} has not implemented the required '
                     '"_is_a()" static method'
                 )
+
+        if potential_subclasses == []:
+            potential_subclasses.append(cls)
         if len(potential_subclasses) != 1:
             if __flags__.get('debug'):
                 print(f'{cls.__class__.__name__}')
