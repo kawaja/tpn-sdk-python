@@ -96,9 +96,11 @@ class SwitchPort(Endpoint):
                 f'{self.id} to {newid}'
             )
 
-        dc = self.session.datacentres[self.data.get('datacenteruuid')]
+        dc = self.session.datacentres[self.data.get('datacentercode')]
         if dc:
             self.parent = dc
+        else:
+            self.parent = 'unknown DC'
 
         self.vports = []
 
