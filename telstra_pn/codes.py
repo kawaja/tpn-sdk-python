@@ -35,6 +35,7 @@ class renewal(enum.Enum):
     auto_disconnect = 0
     auto_renew = 1
     pay_by_hour = 2
+    pay_by_month = 3
 
 
 class vnf_status(enum.Enum):
