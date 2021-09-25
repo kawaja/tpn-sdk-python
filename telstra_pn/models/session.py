@@ -81,14 +81,20 @@ class Session(TPNModel):
     @property
     def datacentres(self) -> telstra_pn.Datacentres:
         if getattr(self, '_datacentres', None) is None:
-            self._datacentres = telstra_pn.Datacentres(self)
+            try:
+                self._datacentres = telstra_pn.Datacentres(self)
+            except AttributeError as exc:
+                raise RuntimeError(exc)
 
         return getattr(self, '_datacentres', None)
 
     @property
     def p2plinks(self) -> telstra_pn.P2PLinks:
         if self._p2plinks is None:
-            self._p2plinks = telstra_pn.P2PLinks(self)
+            try:
+                self._p2plinks = telstra_pn.P2PLinks(self)
+            except AttributeError as exc:
+                raise RuntimeError(exc)
 
         print(self)
         return self._p2plinks
@@ -96,13 +102,19 @@ class Session(TPNModel):
     @property
     def endpoints(self) -> telstra_pn.Endpoints:
         if getattr(self, '_endpoints', None) is None:
-            self._endpoints = telstra_pn.Endpoints(self)
+            try:
+                self._endpoints = telstra_pn.Endpoints(self)
+            except AttributeError as exc:
+                raise RuntimeError(exc)
 
         return getattr(self, '_endpoints', None)
 
     @property
     def topologies(self) -> telstra_pn.Topologies:
         if getattr(self, '_topologies', None) is None:
-            self._topologies = telstra_pn.Topologies(self)
+            try:
+                self._topologies = telstra_pn.Topologies(self)
+            except AttributeError as exc:
+                raise RuntimeError(exc)
 
         return getattr(self, '_topologies', None)
