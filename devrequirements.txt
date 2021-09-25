@@ -30,7 +30,7 @@ requests==2.25.1
 requests-mock==1.9.3
 six==1.16.0
 smmap==4.0.0
-stevedore==3.3.0
+stevedore==3.4.0
 testtools==2.5.0
 toml==0.10.2
 traceback2==1.4.0
