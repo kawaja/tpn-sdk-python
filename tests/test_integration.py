@@ -12,6 +12,7 @@ class TestIntegration(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        otp = None
         if ITOTPSecret is not None:
             otp = pyotp.TOTP(ITOTPSecret).now()
         cls.tpns = telstra_pn.Session(
