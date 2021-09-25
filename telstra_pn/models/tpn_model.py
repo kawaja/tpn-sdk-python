@@ -5,36 +5,36 @@ from telstra_pn.exceptions import (TPNDataError, TPNLogicalError,
                                    TPNLibraryInternalError)
 
 
-class TPNDataHandler:
-    def __init__(self,
-                 owner,
-                 url_path,
-                 get_deref=None,
-                 tpn_data_error_handler=None):
-        self.tpn_data_error_handler = (tpn_data_error_handler
-                                       or owner._handle_tpn_data_error)
-        self.url_path = url_path
-        self.owner = owner
-        self.get_deref = get_deref
+# class TPNDataHandler:
+#     def __init__(self,
+#                  owner,
+#                  url_path,
+#                  get_deref=None,
+#                  tpn_data_error_handler=None):
+#         self.tpn_data_error_handler = (tpn_data_error_handler
+#                                        or owner._handle_tpn_data_error)
+#         self.url_path = url_path
+#         self.owner = owner
+#         self.get_deref = get_deref
 
-    def get_data(self) -> Union[list, dict]:
-        if self.owner.__dict__.get('api_session'):
-            session = self.owner.api_session
-        else:
-            session = self.owner.session.api_session
-        try:
-            response = session.call_api(path=self.url_path)
-        except TPNDataError as exc:
-            response = self.tpn_data_error_handler(exc)
+#     def get_data(self) -> Union[list, dict]:
+#         if self.owner.__dict__.get('api_session'):
+#             session = self.owner.api_session
+#         else:
+#             session = self.owner.session.api_session
+#         try:
+#             response = session.call_api(path=self.url_path)
+#         except TPNDataError as exc:
+#             response = self.tpn_data_error_handler(exc)
 
-        if self.owner.debug:
-            print(f'{self.owner.__class__.__name__}.'
-                  f'get_data.response: {response}')
+#         if self.owner.debug:
+#             print(f'{self.owner.__class__.__name__}.'
+#                   f'get_data.response: {response}')
 
-        if self.get_deref is None:
-            return response
-        else:
-            return self.owner._deref(response)
+#         if self.get_deref is None:
+#             return response
+#         else:
+#             return self.owner._deref(response)
 
 
 class TPNModel:
@@ -99,14 +99,33 @@ class TPNModel:
         if self.debug:
             print(f'creating {self.__class__.__name__}')
 
+    # def _get_data(self, *args, **kwargs) -> Union[list, dict]:
+    #     # late binding of data_handler to ensure subclass has had
+    #     # a chance to populate _url_path, etc.
+    #     if self.data_handler is None:
+    #         self.data_handler = TPNDataHandler(self, self._url_path,
+    #                                            self._get_deref,
+    #                                            self._handle_tpn_data_error)
+    #     return self.data_handler.get_data(*args, **kwargs)
+
     def _get_data(self, *args, **kwargs) -> Union[list, dict]:
-        # late binding of data_handler to ensure subclass has had
-        # a chance to populate _url_path, etc.
-        if self.data_handler is None:
-            self.data_handler = TPNDataHandler(self, self._url_path,
-                                               self._get_deref,
-                                               self._handle_tpn_data_error)
-        return self.data_handler.get_data(*args, **kwargs)
+        if self.__dict__.get('api_session'):
+            session = self.api_session
+        else:
+            session = self.session.api_session
+        try:
+            response = session.call_api(path=self.url_path)
+        except TPNDataError as exc:
+            response = self._handle_tpn_data_error(exc)
+
+        if self.debug:
+            print(f'{self.__class__.__name__}.'
+                  f'get_data.response: {response}')
+
+        if self._get_deref is None:
+            return response
+        else:
+            return self._deref(response)
 
     def _deref(self, data) -> dict:
         return data.get(self._get_deref, {})
@@ -357,6 +376,15 @@ class TPNListModel(TPNModel):
         for i in self.all:
             yield self.all[i]
 
+    def _extend_data(self, data: list, cls: object) -> list:
+        if self.owner.__dict__.get('api_session'):
+            session = self.owner.api_session
+        else:
+            session = self.owner.session.api_session
+
+        urls = [{'path': cls.get_url_path(item)} for item in data]
+        return session.call_apis(urls)
+
 
 class TPNModelSubclassesMixin:
     '''
@@ -382,16 +410,16 @@ class TPNModelSubclassesMixin:
         # pre-create the data handler because we may need
         # attributes from the API to determine which subclass
         # should handle this object
-        if (cls.__dict__.get('get_url_path') and callable(cls.get_url_path)):
-            data_handler = TPNDataHandler(parent, cls.get_url_path(data))
-            response = data_handler.get_data()
-        else:
-            data_handler = TPNDataHandler(parent, parent._url_path)
-            response = {}
+        # if (cls.__dict__.get('get_url_path') and callable(cls.get_url_path)):
+        #     data_handler = TPNDataHandler(parent, cls.get_url_path(data))
+        #     response = data_handler.get_data()
+        # else:
+        #     data_handler = TPNDataHandler(parent, parent._url_path)
+        #     response = {}
 
         # new data from more specific API endpoint should override
         # data retrieved by parent
-        data = {**data, **response}
+        # data = {**data, **response}
 
         # check each subclass to see if one (and only one) claims
         # to be the correct handler for this particular instance
@@ -423,9 +451,9 @@ class TPNModelSubclassesMixin:
         # provide the existing data_handler, assuming the subclass will use
         # the main class's API endpoint. Subclass can choose to replace the
         # data_handler if it has a more specific API endpoint to call
-        data_handler.owner = newobj
-        newobj.data_handler = data_handler
+        # data_handler.owner = newobj
+        # newobj.data_handler = data_handler
         newobj.data = data
-#        cls.__init__(newobj, parent, data_handler=data_handler, **data)
+        # cls.__init__(newobj, parent, data_handler=data_handler, **data)
 
         return newobj

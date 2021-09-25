@@ -34,9 +34,9 @@ class Endpoints(TPNListModel):
         }
 
     def _update_data(self, data: list) -> None:
-        self.data = {**self.data, 'list': data}
+        self.data = {**self.data, 'list': self._extend_data(data, Endpoint)}
 
-        for port in data:
+        for port in self.data['list']:
             self.additem(Endpoint(self, **port))
 
     def display(self):
