@@ -114,7 +114,7 @@ class TPNModel:
         else:
             session = self.session.api_session
         try:
-            response = session.call_api(path=self.url_path)
+            response = session.call_api(path=self._url_path)
         except TPNDataError as exc:
             response = self._handle_tpn_data_error(exc)
 
@@ -142,6 +142,12 @@ class TPNModel:
 
     def __getitem__(self, name: str) -> Any:
         return getattr(self, name)
+
+    def get(self, name: str, default: str = None) -> Any:
+        if hasattr(self, name):
+            return getattr(self, name)
+        else:
+            return default
 
     # def _check_method_overridden(self, attr) -> bool:
     #     myattr = self.__dict__.get(attr, None)
@@ -377,10 +383,10 @@ class TPNListModel(TPNModel):
             yield self.all[i]
 
     def _extend_data(self, data: list, cls: object) -> list:
-        if self.owner.__dict__.get('api_session'):
-            session = self.owner.api_session
+        if self.__dict__.get('api_session'):
+            session = self.api_session
         else:
-            session = self.owner.session.api_session
+            session = self.session.api_session
 
         urls = [{'path': cls.get_url_path(item)} for item in data]
         return session.call_apis(urls)
