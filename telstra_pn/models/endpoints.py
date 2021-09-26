@@ -79,6 +79,8 @@ class Endpoint(TPNModel, TPNModelSubclassesMixin):
 
 
 class SwitchPort(Endpoint):
+    type_name = 'switchport'
+
     def __init__(self, parent, **kwargs):
         super().__init__(parent, **kwargs)
 
@@ -126,6 +128,102 @@ class SwitchPort(Endpoint):
         if self.switchname and self.portno:
             return f'{self.switchname}.{self.portno[0]}'
         return 'SwitchPort'
+
+
+class IPVPN(Endpoint):
+    def __init__(self, parent, **kwargs):
+        super().__init__(parent, **kwargs)
+
+        self.refresh_if_null = [
+            'creationdate', 'enabled',
+            'lastmodifieddate', 'status', 'name'
+        ]
+        self._update_data(kwargs)
+
+    @staticmethod
+    def _is_a(data, parent) -> bool:
+        return parent.types(data['endpointTypeuuid']) == parent.types.IPVPN
+
+    def _update_data(self, data: dict) -> None:
+        self.data = {**self.data, **data}
+        return super()._update_data(data)
+
+    def display(self) -> str:
+        if self.name:
+            return f'IPVPN ({self.name})'
+        return 'IPVPN'
+
+
+class ConstructedProduct(Endpoint):
+    def __init__(self, parent, **kwargs):
+        super().__init__(parent, **kwargs)
+
+        self.refresh_if_null = [
+            'creationdate', 'enabled',
+            'lastmodifieddate', 'status', 'name'
+        ]
+        self._update_data(kwargs)
+
+    @staticmethod
+    def _is_a(data, parent) -> bool:
+        return parent.types(data['endpointTypeuuid']) == parent.types.CP
+
+    def _update_data(self, data: dict) -> None:
+        self.data = {**self.data, **data}
+        return super()._update_data(data)
+
+    def display(self) -> str:
+        if self.name:
+            return f'ConstructedProduct ({self.name})'
+        return 'ConstructedProduct'
+
+
+class Exchange(Endpoint):
+    def __init__(self, parent, **kwargs):
+        super().__init__(parent, **kwargs)
+
+        self.refresh_if_null = [
+            'creationdate', 'enabled',
+            'lastmodifieddate', 'status', 'name'
+        ]
+        self._update_data(kwargs)
+
+    @staticmethod
+    def _is_a(data, parent) -> bool:
+        return parent.types(data['endpointTypeuuid']) == parent.types.Exchange
+
+    def _update_data(self, data: dict) -> None:
+        self.data = {**self.data, **data}
+        return super()._update_data(data)
+
+    def display(self) -> str:
+        if self.name:
+            return f'Exchange ({self.name})'
+        return 'Exchange'
+
+
+class DIA(Endpoint):
+    def __init__(self, parent, **kwargs):
+        super().__init__(parent, **kwargs)
+
+        self.refresh_if_null = [
+            'creationdate', 'enabled',
+            'lastmodifieddate', 'status', 'name'
+        ]
+        self._update_data(kwargs)
+
+    @staticmethod
+    def _is_a(data, parent) -> bool:
+        return parent.types(data['endpointTypeuuid']) == parent.types.DIA
+
+    def _update_data(self, data: dict) -> None:
+        self.data = {**self.data, **data}
+        return super()._update_data(data)
+
+    def display(self) -> str:
+        if self.name:
+            return f'DIA ({self.name})'
+        return 'DIA'
 
 
 class VNF(Endpoint):
