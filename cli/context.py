@@ -13,7 +13,7 @@ class CLIContext(context.Context):
     def on_connected(self, *args, **kwargs):
         if self.debug:
             telstra_pn.__flags__['debug'] = True
-            telstra_pn.__flags__['debug_getattr'] = True
+            telstra_pn.__flags__['debug_api'] = True
         self.tpns = telstra_pn.Session(token=os.environ['TPNTOKEN'])
 
     def on_cli(self, cmd, args):

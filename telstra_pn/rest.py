@@ -2,6 +2,7 @@ from typing import Any
 import requests
 from requests_futures.sessions import FuturesSession
 from concurrent.futures import Future, as_completed
+import datetime
 from telstra_pn import __flags__
 from telstra_pn.exceptions import TPNAPIUnavailable, TPNDataError
 
@@ -11,7 +12,7 @@ stdargs = {'allow_redirects': False}
 
 class ApiSession():
     def __init__(self):
-        self.session = FuturesSession()
+        self.session = FuturesSession(max_workers=20)
         self.debug = __flags__.get('debug_api')
         self.auth = None
 
@@ -35,11 +36,20 @@ class ApiSession():
 
     def call_apis(self, items: list) -> Any:
         results = []
-        futures = [self._call_api(**item) for item in items]
+        futures = [
+            {
+                'starttime': datetime.datetime.now(),
+                'future': self._call_api(**item)
+            }
+            for item in items]
 
-        for future in as_completed(futures):
+        seq = 0
+        for future in as_completed([f['future'] for f in futures]):
             try:
                 r = future.result()
+                future.endtime = datetime.datetime.now()
+                future.seq = seq
+                seq += 1
             except BaseException as exc:
                 raise TPNAPIUnavailable(exc)
 
@@ -51,6 +61,21 @@ class ApiSession():
             except requests.exceptions.HTTPError as exc:
                 raise TPNDataError(f'{r.request.url}: {exc}')
             results.append(r.json())
+
+        if self.debug:
+            for call in sorted(futures, key=lambda x: x['starttime']):
+                total_elapsed = (call["future"].endtime - call["starttime"]
+                                 ) / datetime.timedelta(microseconds=1)
+                query_time = (call["future"].result().elapsed /
+                              datetime.timedelta(microseconds=1))
+                print(
+                    f'{call["future"].result().request.url}, '
+                    f'{call["future"].seq}, '
+                    f'{call["starttime"]}, '
+                    f'{call["future"].endtime}, '
+                    f'{total_elapsed}, ',
+                    f'{query_time}'
+                )
 
         return results
 

@@ -58,13 +58,11 @@ class CLI:
     def output_list_text(self) -> None:
         names = self.obj.table_names
         widths = {name[1]: len(name[0]) for name in names}
-        print(f'widths: {widths}')
         for item in self.obj:
             for (name, key) in names:
                 disp = display_format(item.get(key, '<unknown>'))
                 if widths[key] < len(disp):
                     widths[key] = len(disp)
-        print(f'widths: {widths}')
 
         if self.ctx.headers:
             output = ''
