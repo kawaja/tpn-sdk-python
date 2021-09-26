@@ -90,6 +90,9 @@ class TPNModel:
     _is_refreshing = False
     _url_path = None
     _get_deref = None
+    table_names = [('UUID', 'id')]
+    display_keys = ['id']
+    type_name = 'item'
 
     def __init__(self, session):
         self._initialised = True
@@ -337,43 +340,27 @@ class TPNListModel(TPNModel):
         return data.get(self._get_deref, [])
 
     def __contains__(self, term):
-        return self._get_contains(term, 'contains')
+        if self._get_contains(term) is None:
+            return False
+        return True
 
     def __getitem__(self, term):
-        return self._get_contains(term, 'get')
+        return self._get_contains(term)
 
     # use __dict__ to avoid hitting the TPNModel __getattr__
-    def _get_contains(self, term, action):
+    def _get_contains(self, term):
         if '_refkeys' not in self.__dict__:
-            if action == 'get':
-                return None
-            else:
-                return False
+            return None
         for itemuuid in self.all.keys():
             item = self.all[itemuuid]
             for key in self._refkeys:
-                keyfound = False
                 if key in item.__dict__:
-                    keyfound = True
                     if str(term) == str(item.__dict__[key]):
-                        if action == 'get':
-                            return item
-                        else:
-                            return True
+                        return item
                 if key in item.__dict__['data']:
-                    keyfound = True
                     if str(term) == str(item.__dict__['data'][key]):
-                        if action == 'get':
-                            return item
-                        else:
-                            return True
-                if not keyfound:
-                    raise ValueError(
-                        f'refkey {key} missing from {object.__repr__(item)}')
-        if action == 'get':
-            return None
-        else:
-            return False
+                        return item
+        return None
 
     def __len__(self):
         return len(self.all)

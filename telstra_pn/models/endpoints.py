@@ -11,6 +11,17 @@ from telstra_pn import __flags__
 
 
 class Endpoints(TPNListModel):
+    table_names = [
+        ('Name', 'name'),
+        ('UUID', 'endpointuuid'),
+        ('Datacenter Code', 'datacentercode'),
+        ('Type', 'type'),
+        ('Creation Date', 'creationdate'),
+        ('Last Modified Date', 'lastmodifieddate'),
+        ('Status', 'status')
+    ]
+    type_name = 'endpoint'
+
     def __init__(self, session):
         super().__init__(session)
         self._refkeys = ['endpointuuid', 'name']
@@ -133,7 +144,7 @@ class VNF(Endpoint):
 
     def _update_data(self, data: dict) -> None:
         self.data = {**self.data, **data}
-        self._update_keys(self.data)
+        return super()._update_data(data)
 
     def display(self) -> str:
         if self.name:

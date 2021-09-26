@@ -4,6 +4,15 @@ from telstra_pn.models.tpn_model import TPNModel, TPNListModel
 
 
 class Datacentres(TPNListModel):
+    table_names = [
+        ('Code', 'datacentercode'),
+        ('Name', 'datacentername'),
+        ('UUID', 'datacenteruuid'),
+        ('City', 'cityname'),
+        ('Country', 'countryname')
+    ]
+    type_name = 'datacenter'
+
     def __init__(self, session):
         super().__init__(session)
         self.vnf = []
@@ -27,7 +36,14 @@ class Datacentre(TPNModel):
     def __init__(self, parent, **data):
         super().__init__(parent.session)
         self.data = data
+        self._keyname_mappings = {
+            'id': 'datacenteruuid'
+        }
         self.refresh()
+
+    def _update_data(self, data: dict) -> None:
+        self.data = {**self.data, **data}
+        return super()._update_data(data)
 
     def display(self) -> str:
         return self.datacentercode

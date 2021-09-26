@@ -14,75 +14,70 @@ class CLI:
         '''refresh information from the TPN platform'''
         self.obj.refresh()
 
-    def output_single(self, data: dict) -> None:
-        if self.ctx.text:
-            return self.output_single_text(data)
+    def output_single(self, itemid: str) -> None:
+        item = self.obj[itemid]
+        if item:
+            if self.ctx.text:
+                for key in self.obj.display_keys:
+                    disp = item.get(key, '<unknown>')
+                    cprint(f'{key}: {disp}')
+            if self.ctx.json:
+                outitem = {}
+                for key in self.obj.display_keys:
+                    outitem[key] = item.get(key, '<unknown>')
 
-        if self.ctx.json:
-            return self.output_single_json(data)
-
-        return 1
-
-    def output_single_text(self, data: dict) -> None:
-        if not data:
-            cprint('not found')
-
-        names = self.names
-
-        if names is None:
-            names = [(x, x) for x in data.keys()]
-        for (name, key) in names:
-            disp = data.get(key, '<unknown>')
-            cprint(f'{name}: {disp}')
-
-    def output_single_json(self, data: dict) -> None:
-        outitem = {}
-        for (name, key) in self.names:
-            outitem[name] = data.get(key, '<unknown>')
-
-        cprint(json.dumps(outitem))
-
-    def output_list(self, data: dict) -> None:
-        if self.ctx.text:
-            return self.output_list_text(data)
-
-        if self.ctx.json:
-            return self.output_list_json(data)
+                cprint(json.dumps(outitem))
+        else:
+            if self.ctx.text:
+                cprint(f'{self.obj.type_name} {itemid} not found')
+            else:
+                cprint('{}')
 
         return 1
 
-    def output_list_text(self, data: dict) -> None:
-        widths = {name[1]: len(name[0]) for name in self.names}
-        for item in data:
-            for (name, key) in self.names:
+    def output_list(self) -> None:
+        if self.ctx.text:
+            return self.output_list_text()
+        if self.ctx.json:
+            return self.output_list_json()
+        return 1
+
+    def output_list_text(self) -> None:
+        names = self.obj.table_names
+        widths = {name[1]: len(name[0]) for name in names}
+        print(f'widths: {widths}')
+        for item in self.obj:
+            for (name, key) in names:
                 disp = str(item.get(key, '<unknown>'))
                 if widths[key] < len(disp):
                     widths[key] = len(disp)
+        print(f'widths: {widths}')
 
         if self.ctx.headers:
             output = ''
-            for (name, key) in self.names:
+            for (name, key) in names:
                 output += '{item:<{width}} '.format(item=name,
                                                     width=widths[key])
             cprint(output)
             output = ''
-            for (name, key) in self.names:
+            for (name, key) in names:
                 output += '-'*widths[key] + ' '
             cprint(output)
 
-        for item in data:
+        for item in self.obj:
             output = ''
-            for (name, key) in self.names:
+            for (name, key) in names:
                 disp = str(item.get(key, '<unknown>'))
                 output += '{item:<{width}} '.format(item=disp,
                                                     width=widths[key])
             cprint(output)
 
-    def output_list_json(self, data: dict) -> None:
+    def output_list_json(self) -> None:
         outdata = []
-        for item in data:
+        names = self.obj.table_names
+        for item in self.obj:
             outitem = {}
-            for (name, key) in self.names:
+            for (name, key) in names:
                 outitem[name] = str(item.get(key, '<unknown>'))
             outdata.append(outitem)
 
