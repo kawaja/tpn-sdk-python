@@ -5,6 +5,16 @@ from telstra_pn.models.tpn_model import TPNModel, TPNListModel
 
 
 class Topologies(TPNListModel):
+    table_names = [
+        ('Name', 'name'),
+        ('UUID', 'topologyuuid'),
+        ('Description', 'description'),
+        ('Status', 'status')
+    ]
+    display_keys = [
+        'topologyuuid', 'name', 'description', 'status', 'creation_date'
+    ]
+
     def __init__(self, session):
         super().__init__(session)
         self.vnf = []

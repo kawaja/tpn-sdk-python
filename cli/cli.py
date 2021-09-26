@@ -1,8 +1,20 @@
 import json
+import enum
 from termcolor import cprint
 from nubia import context, command
 
 tpns = None
+
+
+def display_format(value):
+    if isinstance(value, str):
+        return value
+    if isinstance(value, (int, float)):
+        return str(value)
+    if isinstance(value, enum.Enum):
+        return str(value.value)
+    if isinstance(value, bool):
+        return 'true' if bool else 'false'
 
 
 class CLI:
@@ -19,12 +31,13 @@ class CLI:
         if item:
             if self.ctx.text:
                 for key in self.obj.display_keys:
-                    disp = item.get(key, '<unknown>')
+                    disp = display_format(item.get(key, '<unknown>'))
                     cprint(f'{key}: {disp}')
             if self.ctx.json:
                 outitem = {}
                 for key in self.obj.display_keys:
-                    outitem[key] = item.get(key, '<unknown>')
+                    if item.get(key):
+                        outitem[key] = display_format(item.get(key))
 
                 cprint(json.dumps(outitem))
         else:
@@ -48,7 +61,7 @@ class CLI:
         print(f'widths: {widths}')
         for item in self.obj:
             for (name, key) in names:
-                disp = str(item.get(key, '<unknown>'))
+                disp = display_format(item.get(key, '<unknown>'))
                 if widths[key] < len(disp):
                     widths[key] = len(disp)
         print(f'widths: {widths}')
@@ -67,7 +80,7 @@ class CLI:
         for item in self.obj:
             output = ''
             for (name, key) in names:
-                disp = str(item.get(key, '<unknown>'))
+                disp = display_format(item.get(key, '<unknown>'))
                 output += '{item:<{width}} '.format(item=disp,
                                                     width=widths[key])
             cprint(output)
@@ -78,7 +91,7 @@ class CLI:
         for item in self.obj:
             outitem = {}
             for (name, key) in names:
-                outitem[name] = str(item.get(key, '<unknown>'))
+                outitem[name] = display_format(item.get(key, '<unknown>'))
             outdata.append(outitem)
 
         cprint(json.dumps(outdata))

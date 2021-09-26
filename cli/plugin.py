@@ -20,7 +20,6 @@ class CLIPlugin(PluginInterface):
         with the values, and/or decide to raise `ArgsValidationError` with
         the error message.
         '''
-        print(f'validate_args: {args}')
         pass
 
     def get_opts_parser(self, add_help=True):
@@ -28,7 +27,6 @@ class CLIPlugin(PluginInterface):
         Builds the ArgumentParser that will be passed to , use this to
         build your list of arguments that you want for your shell.
         '''
-        print('get_opts_parser')
         opts_parser = argparse.ArgumentParser(
             description='TPN CLI Utility',
             formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -56,7 +54,7 @@ class CLIPlugin(PluginInterface):
             '-v',
             action='count',
             default=0,
-            help='Increase verbosity, can be specified ' 'multiple times',
+            help='Increase verbosity, can be specified multiple times',
         )
         opts_parser.add_argument(
             '--stderr',

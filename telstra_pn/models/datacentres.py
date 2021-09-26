@@ -11,6 +11,10 @@ class Datacentres(TPNListModel):
         ('City', 'cityname'),
         ('Country', 'countryname')
     ]
+    display_keys = [
+        'datacentercode', 'datacentername', 'datacenteruuid', 'cityname',
+        'countrycode'
+    ]
     type_name = 'datacenter'
 
     def __init__(self, session):

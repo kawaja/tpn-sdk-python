@@ -6,8 +6,8 @@ from telstra_pn.exceptions import (TPNRefreshInconsistency)
 # from telstra_pn.codes import vportstatus
 from telstra_pn import __flags__
 
-# Endpoints is are high change rate resource
-# Contracts is are high change rate resource
+# Endpoints is a high change rate resource
+# Contracts is a high change rate resource
 
 
 class Endpoints(TPNListModel):
