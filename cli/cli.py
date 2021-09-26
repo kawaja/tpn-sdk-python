@@ -1,5 +1,6 @@
 import json
 import enum
+from types import FunctionType
 from termcolor import cprint
 from nubia import context, command
 
@@ -48,21 +49,36 @@ class CLI:
 
         return 1
 
-    def output_list(self) -> None:
+    def output_list(self, **kwargs) -> None:
         if self.ctx.text:
-            return self.output_list_text()
+            return self.output_list_text(**kwargs)
         if self.ctx.json:
-            return self.output_list_json()
+            return self.output_list_json(**kwargs)
         return 1
 
-    def output_list_text(self) -> None:
-        names = self.obj.table_names
+    def output_list_text(self,
+                         filter: FunctionType = None,
+                         table_names_overrides: list = None) -> None:
+        if table_names_overrides is None:
+            names = self.obj.table_names
+        else:
+            names = table_names_overrides
+
         widths = {name[1]: len(name[0]) for name in names}
+        found_item = False
         for item in self.obj:
+            if filter is not None:
+                if filter(item) is False:
+                    continue
+            found_item = True
             for (name, key) in names:
                 disp = display_format(item.get(key, '<unknown>'))
                 if widths[key] < len(disp):
                     widths[key] = len(disp)
+
+        if not found_item:
+            cprint('no items found')
+            return
 
         if self.ctx.headers:
             output = ''
@@ -76,6 +92,9 @@ class CLI:
             cprint(output)
 
         for item in self.obj:
+            if filter is not None:
+                if filter(item) is False:
+                    continue
             output = ''
             for (name, key) in names:
                 disp = display_format(item.get(key, '<unknown>'))

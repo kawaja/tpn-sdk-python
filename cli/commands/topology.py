@@ -3,7 +3,7 @@ from cli.cli import CLI
 
 
 @command('topologies')
-class CLIDatacenters(CLI):
+class CLITopologies(CLI):
     '''Interact with TPN topologies'''
     def __init__(self):
         self.ctx = context.get_context()
