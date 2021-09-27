@@ -5,38 +5,6 @@ from telstra_pn.exceptions import (TPNDataError, TPNLogicalError,
                                    TPNLibraryInternalError)
 
 
-# class TPNDataHandler:
-#     def __init__(self,
-#                  owner,
-#                  url_path,
-#                  get_deref=None,
-#                  tpn_data_error_handler=None):
-#         self.tpn_data_error_handler = (tpn_data_error_handler
-#                                        or owner._handle_tpn_data_error)
-#         self.url_path = url_path
-#         self.owner = owner
-#         self.get_deref = get_deref
-
-#     def get_data(self) -> Union[list, dict]:
-#         if self.owner.__dict__.get('api_session'):
-#             session = self.owner.api_session
-#         else:
-#             session = self.owner.session.api_session
-#         try:
-#             response = session.call_api(path=self.url_path)
-#         except TPNDataError as exc:
-#             response = self.tpn_data_error_handler(exc)
-
-#         if self.owner.debug:
-#             print(f'{self.owner.__class__.__name__}.'
-#                   f'get_data.response: {response}')
-
-#         if self.get_deref is None:
-#             return response
-#         else:
-#             return self.owner._deref(response)
-
-
 class TPNModel:
     '''
     `TPNModel` represents the generic elements of a TPN object.
@@ -85,7 +53,6 @@ class TPNModel:
       `__init__()` does not call `super().__init__(session)`.
     '''
 
-    data_handler = None
     data = {}
     _is_refreshing = False
     _url_path = None
@@ -101,15 +68,6 @@ class TPNModel:
 
         if self.debug:
             print(f'creating {self.__class__.__name__}')
-
-    # def _get_data(self, *args, **kwargs) -> Union[list, dict]:
-    #     # late binding of data_handler to ensure subclass has had
-    #     # a chance to populate _url_path, etc.
-    #     if self.data_handler is None:
-    #         self.data_handler = TPNDataHandler(self, self._url_path,
-    #                                            self._get_deref,
-    #                                            self._handle_tpn_data_error)
-    #     return self.data_handler.get_data(*args, **kwargs)
 
     def _get_data(self, *args, **kwargs) -> Union[list, dict]:
         if self.__dict__.get('api_session'):
@@ -134,7 +92,9 @@ class TPNModel:
         return data.get(self._get_deref, {})
 
     def _handle_tpn_data_error(self, exc):
-        raise(exc)
+        if exc.status_code == 400:
+            return {}
+        raise(exc) from None
 
     def _update_data(self, data: dict) -> None:
         self._update_keys(data)
@@ -162,13 +122,14 @@ class TPNModel:
     def __getattr__(self, name: str) -> Any:
         if name[0] == '_':
             raise AttributeError(
-                f'{self.__class__.__name__} has no such attribute "{name}"')
+                f'{self.__class__.__name__} has no such attribute "{name}"'
+            ) from None
 
         if self.__dict__.get('_initialised') is None:
             raise TPNLibraryInternalError(
                 f'{self.__class__} does not call "super().__init__(session)" '
                 'in "__init__()"'
-            )
+            ) from None
         if __flags__.get('debug_getattr'):
             pframe = inspect.currentframe().f_back
             print(f'__getattr__ {self.__class__.__name__}: {name} '
@@ -181,7 +142,7 @@ class TPNModel:
                 if self._needs_refresh():
                     raise TPNLogicalError(
                         f'refresh for {self.__class__.__name__} '
-                        'did not retrieve all required attributes')
+                        'did not retrieve all required attributes') from None
 
         if name in self.__dict__:
             return self.__dict__[name]
@@ -195,7 +156,8 @@ class TPNModel:
             return d[name]
 
         raise AttributeError(
-            f'{self.__class__.__name__} has no such attribute "{name}"')
+            f'{self.__class__.__name__} has no such attribute "{name}"'
+        ) from None
 
     def _needs_refresh(self) -> bool:
         if 'refresh_if_null' in self.__dict__:
@@ -329,12 +291,12 @@ class TPNListModel(TPNModel):
                     f'attempted to add item {item.__dict__} (to '
                     f'{self.__class__}) which does not contain '
                     f'primary key {self._primary_key}'
-                )
+                ) from None
         else:
             raise TPNLibraryInternalError(
                 f'{self.__class__} has not implemented '
                 'required attribute "_primary_key"'
-            )
+            ) from None
 
     def _deref(self, data) -> list:
         return data.get(self._get_deref, [])
@@ -400,20 +362,6 @@ class TPNModelSubclassesMixin:
       implmented.
     '''
     def __new__(cls, parent, **data):
-        # pre-create the data handler because we may need
-        # attributes from the API to determine which subclass
-        # should handle this object
-        # if (cls.__dict__.get('get_url_path') and callable(cls.get_url_path)):
-        #     data_handler = TPNDataHandler(parent, cls.get_url_path(data))
-        #     response = data_handler.get_data()
-        # else:
-        #     data_handler = TPNDataHandler(parent, parent._url_path)
-        #     response = {}
-
-        # new data from more specific API endpoint should override
-        # data retrieved by parent
-        # data = {**data, **response}
-
         # check each subclass to see if one (and only one) claims
         # to be the correct handler for this particular instance
         potential_subclasses = []
@@ -440,13 +388,6 @@ class TPNModelSubclassesMixin:
         # Using object.__new__ (the original implementation of __new__
         # is important to avoid creating an infinite recursion on __new__
         newobj = object.__new__(potential_subclasses[0])
-
-        # provide the existing data_handler, assuming the subclass will use
-        # the main class's API endpoint. Subclass can choose to replace the
-        # data_handler if it has a more specific API endpoint to call
-        # data_handler.owner = newobj
-        # newobj.data_handler = data_handler
         newobj.data = data
-        # cls.__init__(newobj, parent, data_handler=data_handler, **data)
 
         return newobj

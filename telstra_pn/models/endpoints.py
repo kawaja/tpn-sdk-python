@@ -13,13 +13,14 @@ from telstra_pn import __flags__
 class Endpoints(TPNListModel):
     table_names = [
         ('Name', 'name'),
-        ('UUID', 'endpointuuid'),
+        ('UUID', 'id'),
         ('Datacenter Code', 'datacentercode'),
         ('Type', 'type'),
         ('Creation Date', 'creationdate'),
         ('Last Modified Date', 'lastmodifieddate'),
         ('Status', 'status')
     ]
+    display_keys = [k[1] for k in table_names]
     type_name = 'endpoint'
 
     def __init__(self, session):
@@ -96,18 +97,18 @@ class SwitchPort(Endpoint):
         if portarr is None:
             raise TPNRefreshInconsistency(
                 'SwitchPort detail does not contain "portno" field'
-            )
+            ) from None
         if len(portarr) != 1:
             raise TPNRefreshInconsistency(
                 f'SwitchPort detail contains {len(portarr)} ports'
-            )
+            ) from None
         self.port = portarr[0]
         newid: str = self.data.get('endpointuuid')
         if self.id != newid:
             raise TPNRefreshInconsistency(
                 'SwitchPort endpointuuid changed from '
                 f'{self.id} to {newid}'
-            )
+            ) from None
 
         dc = self.session.datacentres[self.data.get('datacentercode')]
         if dc:
@@ -161,8 +162,18 @@ class ConstructedProduct(Endpoint):
         self.refresh_if_null = [
             'creationdate', 'enabled',
             'lastmodifieddate', 'status', 'name'
+            'product_definition_uuid', 'price', 'currency'
         ]
         self._update_data(kwargs)
+        self._url_path = f'/cpms/1.0.0/endpoint/{self.id}'
+
+    def _handle_tpn_data_error(self, exc: Exception) -> list:
+        # 400 == failed CP missing in cpms? set error message
+        # to avoid constant refreshing
+        if exc.status_code == 400:
+            self.data.setdefault('product_definition_uuid', '<error>')
+            self.data.setdefault('price', '<error>')
+            self.data.setdefault('currency', '<error>')
 
     @staticmethod
     def _is_a(data, parent) -> bool:

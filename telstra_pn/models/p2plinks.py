@@ -140,7 +140,7 @@ class P2PContract(TPNModel):
                 raise TPNRefreshInconsistency(
                     'P2PContract contractid changed from '
                     f'{self.id} to {self.contractid}'
-                )
+                ) from None
 
         # linkid is from parent
         if self.__dict__.get('linkid', None) is None:
@@ -150,7 +150,7 @@ class P2PContract(TPNModel):
                 raise TPNRefreshInconsistency(
                     'P2PContract linkid changed from '
                     f'{self.linkid} to {linkid}'
-                )
+                ) from None
 
         self._update_keys(data)
         self.seqno = self.id[self.id.find('.')+1:]

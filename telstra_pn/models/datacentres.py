@@ -9,12 +9,10 @@ class Datacentres(TPNListModel):
         ('Name', 'datacentername'),
         ('UUID', 'datacenteruuid'),
         ('City', 'cityname'),
-        ('Country', 'countryname')
+        ('Country', 'countryname'),
+        ('VNF Capable', 'vnf_capable')
     ]
-    display_keys = [
-        'datacentercode', 'datacentername', 'datacenteruuid', 'cityname',
-        'countrycode'
-    ]
+    display_keys = [k[1] for k in table_names]
     type_name = 'datacenter'
 
     def __init__(self, session):
@@ -24,7 +22,14 @@ class Datacentres(TPNListModel):
         self._primary_key = 'datacenteruuid'
         self._url_path = '/1.0.0/inventory/datacenters'
         self._get_deref = 'datacenters'
+        self._vnf_capable = self._populate_vnf_capable()
         self.refresh()
+
+    def _populate_vnf_capable(self):
+        response = self.session.api_session.call_api(
+            path='/eis/1.0.0/datacenters/switchtypename/vnf'
+        )
+        return [dc['datacenteruuid'] for dc in response['datacenters']]
 
     def display(self) -> str:
         return f'{len(self.all)} datacentres'
@@ -40,6 +45,8 @@ class Datacentre(TPNModel):
     def __init__(self, parent, **data):
         super().__init__(parent.session)
         self.data = data
+        self.data['vnf_capable'] = (self.data['datacenteruuid']
+                                    in parent._vnf_capable)
         self._keyname_mappings = {
             'id': 'datacenteruuid'
         }

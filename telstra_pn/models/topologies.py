@@ -7,13 +7,11 @@ from telstra_pn.models.tpn_model import TPNModel, TPNListModel
 class Topologies(TPNListModel):
     table_names = [
         ('Name', 'name'),
-        ('UUID', 'topologyuuid'),
+        ('UUID', 'id'),
         ('Description', 'description'),
         ('Status', 'status')
     ]
-    display_keys = [
-        'topologyuuid', 'name', 'description', 'status', 'creation_date'
-    ]
+    display_keys = [k[1] for k in table_names] + ['creation_date']
 
     def __init__(self, session):
         super().__init__(session)

@@ -25,7 +25,8 @@ class CLIContext(context.Context):
         self.set_options(args)
         ret = self._registry.find_command("connect").run_cli(args)
         if ret:
-            raise exceptions.CommandError("Failed starting interactive mode")
+            raise exceptions.CommandError(
+                "Failed starting interactive mode") from None
         # dispatch the on connected message
         self.registry.dispatch_message(eventbus.Message.CONNECTED)
 

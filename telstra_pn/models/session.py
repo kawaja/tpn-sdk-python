@@ -35,13 +35,13 @@ class Session(TPNModel):
 
     def login(self, accountid, username, password, otp):
         if not accountid:
-            raise ValueError('Session: accountid is required')
+            raise ValueError('Session: accountid is required') from None
 
         if not username:
-            raise ValueError('Session: username is required')
+            raise ValueError('Session: username is required') from None
 
         if not password:
-            raise ValueError('Session: password is required')
+            raise ValueError('Session: password is required') from None
 
         login = {
             'grant_type': 'password',
@@ -62,7 +62,7 @@ class Session(TPNModel):
         except TPNDataError as exc:
             print(f'session exception: {exc}')
             if exc.status_code == 412:
-                raise TPNInvalidLogin()
+                raise TPNInvalidLogin() from None
             raise(exc)
 
         if self.debug:
@@ -84,7 +84,7 @@ class Session(TPNModel):
             try:
                 self._datacentres = telstra_pn.Datacentres(self)
             except AttributeError as exc:
-                raise RuntimeError(exc)
+                raise RuntimeError(exc) from None
 
         return getattr(self, '_datacentres', None)
 
@@ -94,7 +94,7 @@ class Session(TPNModel):
             try:
                 self._p2plinks = telstra_pn.P2PLinks(self)
             except AttributeError as exc:
-                raise RuntimeError(exc)
+                raise RuntimeError(exc) from None
 
         print(self)
         return self._p2plinks
@@ -105,7 +105,7 @@ class Session(TPNModel):
             try:
                 self._endpoints = telstra_pn.Endpoints(self)
             except AttributeError as exc:
-                raise RuntimeError(exc)
+                raise RuntimeError(exc) from None
 
         return getattr(self, '_endpoints', None)
 
@@ -115,6 +115,6 @@ class Session(TPNModel):
             try:
                 self._topologies = telstra_pn.Topologies(self)
             except AttributeError as exc:
-                raise RuntimeError(exc)
+                raise RuntimeError(exc) from None
 
         return getattr(self, '_topologies', None)

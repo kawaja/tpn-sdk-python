@@ -23,7 +23,7 @@ class ApiSession():
         try:
             r = self._call_api(**kwargs).result()
         except BaseException as exc:
-            raise TPNAPIUnavailable(exc)
+            raise TPNAPIUnavailable(exc) from None
 
         if self.debug:
             print(f'<-- {r.status_code}')
@@ -31,7 +31,7 @@ class ApiSession():
         try:
             r.raise_for_status()
         except requests.exceptions.HTTPError as exc:
-            raise TPNDataError(exc)
+            raise TPNDataError(exc) from None
         return(r.json())
 
     def call_apis(self, items: list) -> Any:
@@ -51,7 +51,7 @@ class ApiSession():
                 future.seq = seq
                 seq += 1
             except BaseException as exc:
-                raise TPNAPIUnavailable(exc)
+                raise TPNAPIUnavailable(exc) from None
 
             if self.debug:
                 print(f'<-- {r.status_code}')
@@ -59,7 +59,7 @@ class ApiSession():
             try:
                 r.raise_for_status()
             except requests.exceptions.HTTPError as exc:
-                raise TPNDataError(f'{r.request.url}: {exc}')
+                raise TPNDataError(f'{r.request.url}: {exc}') from None
             results.append(r.json())
 
         if self.debug:
@@ -129,4 +129,4 @@ class ApiSession():
                 headers=headers,
                 **stdargs, **kwargs)
 
-        raise TPNAPIUnavailable(f'method {method} not implemented')
+        raise TPNAPIUnavailable(f'method {method} not implemented') from None
