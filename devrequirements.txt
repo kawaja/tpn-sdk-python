@@ -3,7 +3,7 @@ bandit==1.7.0
 certifi==2021.10.8
 chardet==4.0.0
 click==8.0.3
-coverage==6.0.1
+coverage==6.0.2
 extras==1.0.0
 fixtures==3.0.0
 flake8==3.9.2
