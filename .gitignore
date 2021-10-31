@@ -8,3 +8,4 @@ cov.xml
 realtest.py
 gettoken
 integration_test_credentials.py
+.DS_Store
