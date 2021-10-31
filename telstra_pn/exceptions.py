@@ -7,6 +7,8 @@ class TPNAPIUnavailable(RuntimeError):
 
 class TPNDataError(RuntimeError):
     def __init__(self, http_error: HTTPError):
+#        print(f'http_error: {http_error.__dict__}')
+#        print(f'http_error.response: {http_error.response.__dict__}')
         self.status_code = int(http_error.response.status_code)
 
 
