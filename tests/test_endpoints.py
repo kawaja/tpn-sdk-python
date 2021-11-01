@@ -99,6 +99,8 @@ class TestEndpoints(testtools.TestCase):
                      ('switchporttype', ), ('datacenters', ),
                      ('switchtypename', )])
 
+        print(f'mock status: {self.api_mock.real_http}')
+
         with self.assertRaisesRegex(
                 telstra_pn.exceptions.TPNRefreshInconsistency,
                 'detail does not contain "portno" field'):
