@@ -9,8 +9,10 @@ try:
     from tests.integration_test_credentials import (
         ITAccountID, ITUserName, ITPassword, ITOTPSecret)
 except ModuleNotFoundError:
-    print('please create tests/integration_test_credentials.py to run integration testing')
-    sys.exit(0)
+    pytest.exit(
+        'please create tests/integration_test_credentials.py '
+        'to run integration testing',
+        returncode=0)
 
 # from telstra_pn.codes import latency, renewal
 
