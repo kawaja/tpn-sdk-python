@@ -59,7 +59,7 @@ class ApiSession():
             try:
                 r.raise_for_status()
             except requests.exceptions.HTTPError as exc:
-                raise TPNDataError(f'{r.request.url}: {exc}') from None
+                raise TPNDataError(exc) from None
             results.append(r.json())
 
         if self.debug:

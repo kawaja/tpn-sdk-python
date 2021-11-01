@@ -105,7 +105,7 @@ class Session(TPNModel):
             try:
                 self._endpoints = telstra_pn.Endpoints(self)
             except AttributeError as exc:
-                raise RuntimeError(exc) from None
+                raise RuntimeError from exc
 
         return getattr(self, '_endpoints', None)
 

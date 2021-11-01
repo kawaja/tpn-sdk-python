@@ -41,6 +41,8 @@ class TPNModel:
     - include an implementation of `_handle_tpn_data_error(self, exc)`
       which will be called if a TPNDataError exception is raised
       while retrieving data from the TPN API via `_get_data()`.
+      `_handle_tpn_data_error()` should either return an alternative
+      response payload, or re-raise TPNDataError.
 
     Public methods:
     - `refresh()` manually triggers a refresh of this object's data
