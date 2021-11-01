@@ -1,3 +1,8 @@
+![master build](https://img.shields.io/github/workflow/status/kawaja/tpn-sdk-python/Push?label=main%20build)
+![CodeQL](https://github.com/kawaja/tpn-sdk-python/workflows/CodeQL/badge.svg)
+[![codecov](https://codecov.io/gh/kawaja/tpn-sdk-python/branch/master/graph/badge.svg?token=DGAVK4FCPQ)](https://codecov.io/gh/kawaja/tpn-sdk-python)
+[![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/kawaja/tpn-sdk-python.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/kawaja/tpn-sdk-python/context:python)
+
 # Telstra Programmable Network Python SDK
 Telstra Programmable Network is a self-provisioning platform that allows its users to create on-demand connectivity services between multiple end-points and add various network functions to those services. Programmable Network enables to connectivity to a global ecosystem of networking services as well as public and private cloud services. Once you are connected to the platform on one or more POPs (points of presence), you can start creating those services based on the use case that you want to accomplish. The Programmable Network API is available to all customers who have registered to use the Programmable Network. To register, please contact your account representative.
 
