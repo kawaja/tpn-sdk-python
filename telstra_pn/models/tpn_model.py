@@ -316,12 +316,18 @@ class TPNListModel(TPNModel):
         for itemuuid in self.all.keys():
             item = self.all[itemuuid]
             for key in self._refkeys:
+                keyfound = False
                 if key in item.__dict__:
+                    keyfound = True
                     if str(term) == str(item.__dict__[key]):
                         return item
                 if key in item.__dict__['data']:
+                    keyfound = True
                     if str(term) == str(item.__dict__['data'][key]):
                         return item
+                if not keyfound:
+                    raise ValueError(
+                        f'refkey {key} missing from {object.__repr__(item)}')
         return None
 
     def __len__(self):
