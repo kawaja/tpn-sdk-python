@@ -5,14 +5,11 @@ import unittest
 import pytest
 import telstra_pn
 from telstra_pn import latency, renewal, status
-try:
-    from tests.integration_test_credentials import (
-        ITAccountID, ITUserName, ITPassword, ITOTPSecret)
-except ModuleNotFoundError:
-    pytest.exit(
-        'please create tests/integration_test_credentials.py '
-        'to run integration testing',
-        returncode=0)
+creds = pytest.importorskip(
+    'tests.integration_test_credentials',
+    reason='please create tests/integration_test_credentials.py '
+    'to run integration testing',
+)
 
 # from telstra_pn.codes import latency, renewal
 
@@ -22,12 +19,12 @@ class TestIntegration(unittest.TestCase):
     def setUpClass(cls):
         super().setUpClass()
         otp = None
-        if ITOTPSecret is not None:
-            otp = pyotp.TOTP(ITOTPSecret).now()
+        if creds.ITOTPSecret is not None:
+            otp = pyotp.TOTP(creds.ITOTPSecret).now()
         cls.tpns = telstra_pn.Session(
-            accountid=ITAccountID,
-            username=ITUserName,
-            password=ITPassword,
+            accountid=creds.ITAccountID,
+            username=creds.ITUserName,
+            password=creds.ITPassword,
             otp=otp)
 
     def test_validate(self):
@@ -35,7 +32,7 @@ class TestIntegration(unittest.TestCase):
         print(f'useruuid: {TestIntegration.tpns.useruuid}')
         print(f'username: {TestIntegration.tpns.username}')
         self.assertEqual(TestIntegration.tpns.username,
-                         f'{ITAccountID}/{ITUserName}')
+                         f'{creds.ITAccountID}/{creds.ITUserName}')
 
     def test_datacentres(self):
         dcs = TestIntegration.tpns.datacentres

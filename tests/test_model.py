@@ -431,7 +431,7 @@ class TestListModelBehaviour(unittest.TestCase):
         self.assertNotIn('data1', self.ml)
 
     def test_list_model_no_refkeys_get(self):
-        self.assertEquals(self.ml['data1'].key1, 'data1')
+        self.assertEqual(self.ml['data1'].key1, 'data1')
         del self.ml._refkeys
         self.assertIsNone(self.ml['data1'])
 
