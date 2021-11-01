@@ -58,10 +58,12 @@ class TestDatacentres(testtools.TestCase):
             self.assertEqual(dc.countryname, 'Australia')
 
     def test_datacentres_refresh(self):
-        self.assertEqual(self.api_mock.call_count, 2,
+        # calls: generatetoken, inventory/datacenters, switchtypename/vnf
+        self.assertEqual(self.api_mock.call_count, 3,
                          mock_history(self.api_mock))
         self.dcs.refresh()
-        self.assertEqual(self.api_mock.call_count, 3,
+        # calls: + inventory/datacenters
+        self.assertEqual(self.api_mock.call_count, 4,
                          mock_history(self.api_mock))
 
     def test_datacentres_display(self):

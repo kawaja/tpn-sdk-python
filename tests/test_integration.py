@@ -1,3 +1,4 @@
+import sys
 from time import sleep
 import pyotp
 import unittest
@@ -9,6 +10,7 @@ try:
         ITAccountID, ITUserName, ITPassword, ITOTPSecret)
 except ModuleNotFoundError:
     print('please create tests/integration_test_credentials.py to run integration testing')
+    sys.exit(0)
 
 # from telstra_pn.codes import latency, renewal
 

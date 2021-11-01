@@ -115,6 +115,43 @@ endpointtypes = [{
     "switchporttypeuuid": "a312feb4-6314-11e8-ad33-000c293805b1"
 }]
 
+switchtypename_vnf = {
+    "datacenters": [{
+            "datacentercode": "JTHA",
+            "datacentername": "JTHA - Tokyo (Ateria Comspace)",
+            "datacenteruuid": "2c031ba8-ccbf-11e5-b670-000c293805b1"
+        }, {
+            "datacentercode": "ULHC",
+            "datacentername": "ULHC - London (Telstra London Hosting Center)",
+            "datacenteruuid": "2c032d70-ccbf-11e5-b670-000c293805b1"
+        }, {
+            "datacentercode": "1WMR",
+            "datacentername": "1WMR - Los Angeles (Coresite LA1)",
+            "datacenteruuid": "2c033358-ccbf-11e5-b670-000c293805b1"
+        }, {
+            "datacentercode": "UNSE",
+            "datacentername": "UNSE - Secaucus (Coresite NY2)",
+            "datacenteruuid": "2c0336f0-ccbf-11e5-b670-000c293805b1"
+        }, {
+            "datacentercode": "SGPL",
+            "datacentername": "SGPL - Singapore (BDX SIN1)",
+            "datacenteruuid": "2c033b50-ccbf-11e5-b670-000c293805b1"
+        }, {
+            "datacentercode": "HKCK",
+            "datacentername": "HKCK - Tseung Kwan O (Telstra Cheung Kwan O)",
+            "datacenteruuid": "2c03481f-ccbf-11e5-b670-000c293805b1"
+        }, {
+            "datacentercode": "EXBN",
+            "datacentername": "EXBN - Melbourne (Telstra Exhibition Exch.)",
+            "datacenteruuid": "ed1313fd-41cd-4fea-9916-d5dc1e6ddf78"
+        }, {
+            "datacentercode": "PITT",
+            "datacentername": "PITT - Sydney (Telstra Pitt Street Exch.)",
+            "datacenteruuid": "23fd3f4c-872b-45d5-bc9f-1c0cf5bf1601"
+        }
+    ]
+}
+
 mock_endpoints_responses = {
     f'/1.0.0/inventory/endpoints/customeruuid/{MockAuthCustomerUUID}': {
         ('default', 'GET'): {
@@ -157,5 +194,8 @@ mock_endpoints_responses = {
     },
     '/eis/1.0.0/switchporttype': {
         ('default', 'GET'): {'json': endpointtypes}
+    },
+    '/eis/1.0.0/datacenters/switchtypename/vnf': {
+        ('default', 'GET'): {'json': switchtypename_vnf}
     }
 }

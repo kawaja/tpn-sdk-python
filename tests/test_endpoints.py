@@ -60,6 +60,10 @@ class TestEndpointSubtypes(unittest.TestCase):
             Port = '32eea883-16cf-11e8-902e-000c293805b1'
             VNF = '4c240647-16cf-11e8-902e-000c293805b1'
             NotPort = '48ad9af9-decb-40a2-8c69-db5b36f321bd'
+            IPVPN = 'd630970e-f33c-11e6-be1f-000c293805b1'
+            CP = '3386e885-ebc4-11e7-b8f4-000c293805b1'
+            Exchange = '8af8351c-75ef-11e6-a638-02304ce2af1b'
+            DIA = 'a03d653c-dc6f-11e5-996f-000c293805b1'
 
         session = MagicMock()
         session.api_session.call_api.return_value = (
@@ -92,7 +96,8 @@ class TestEndpoints(testtools.TestCase):
         setup_mocks(self.api_mock,
                     [('endpoints', ),
                      ('endpoint/endpointuuid', 'GET', 'noportno'),
-                     ('switchporttype', ), ('datacenters', )])
+                     ('switchporttype', ), ('datacenters', ),
+                     ('switchtypename', )])
 
         with self.assertRaisesRegex(
                 telstra_pn.exceptions.TPNRefreshInconsistency,
@@ -163,12 +168,12 @@ class TestEndpointsBehaviour(testtools.TestCase):
 
     def test_endpoints_refresh(self):
         # calls: generatetoken, validatetoken, switchporttype,
-        # endpointlist, datacentres, 3 x endpoints
-        self.assertEqual(self.api_mock.call_count, 8,
+        # endpointlist, datacentres, 3 x endpoints, switchtypename
+        self.assertEqual(self.api_mock.call_count, 9,
                          mock_history(self.api_mock))
         self.eps.refresh()
         # calls: + endpointlist, 3 x endpoints
-        self.assertEqual(self.api_mock.call_count, 12,
+        self.assertEqual(self.api_mock.call_count, 13,
                          mock_history(self.api_mock))
 
     def test_endpoints_display(self):
