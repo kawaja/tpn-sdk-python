@@ -1,10 +1,15 @@
 from time import sleep
 import pyotp
 import unittest
+import pytest
 import telstra_pn
 from telstra_pn import latency, renewal, status
-from tests.integration_test_credentials import (
-    ITAccountID, ITUserName, ITPassword, ITOTPSecret)
+try:
+    from tests.integration_test_credentials import (
+        ITAccountID, ITUserName, ITPassword, ITOTPSecret)
+except ModuleNotFoundError:
+    print('please create tests/integration_test_credentials.py to run integration testing')
+
 # from telstra_pn.codes import latency, renewal
 
 
@@ -46,6 +51,7 @@ class TestIntegration(unittest.TestCase):
         for topo in topos:
             print(f'topology name: {topo.topologyname}')
 
+    @pytest.mark.xfail(reason='Link creation not yet implemented')
     def test_create_link(self):
         e1 = TestIntegration.tpns.endpoints[
             '6ae5c55f-1ca5-4aae-b788-b1a774a97157'].vlan(39)
