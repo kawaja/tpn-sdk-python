@@ -9,7 +9,7 @@ pytest==6.2.5
 pytest-cov==3.0.0
 pytest-mock==3.6.1
 PyYAML==6.0
-requests==2.26.0
+requests==2.27.0
 requests-mock==1.9.3
 toml==0.10.2
 traceback2==1.4.0
