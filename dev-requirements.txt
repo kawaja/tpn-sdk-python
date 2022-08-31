@@ -10,7 +10,7 @@ pytest-cov==3.0.0
 pytest-mock==3.8.2
 PyYAML==6.0
 requests==2.28.1
-requests-mock==1.9.3
+requests-mock==1.10.0
 testtools==2.5.0
 toml==0.10.2
 traceback2==1.4.0
