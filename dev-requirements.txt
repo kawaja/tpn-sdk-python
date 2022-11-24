@@ -1,7 +1,7 @@
 bandit==1.7.4
 coverage==6.5.0
 fixtures==4.0.1
-flake8==5.0.4
+flake8==6.0.0
 pycodestyle==2.9.1
 pyflakes==2.5.0
 pyotp==2.7.0
