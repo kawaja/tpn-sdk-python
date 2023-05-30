@@ -1,5 +1,5 @@
 bandit==1.7.5
-coverage==7.2.6
+coverage==7.2.7
 fixtures==4.1.0
 flake8==6.0.0
 pycodestyle==2.10.0
